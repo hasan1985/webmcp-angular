@@ -51,6 +51,19 @@ class HarnessModelContext extends EventTarget {
   readonly tools = new Map<string, HarnessTool>();
   readonly calls: HarnessCall[] = [];
 
+  /**
+   * The spec fires `toolchange` on the **document** (and descendants), not only on
+   * the ModelContext object — so anything listening the way a real integration
+   * would, e.g. `document.addEventListener('toolchange', …)`, must be notified.
+   * Dispatching only on the context made a correct bridge look broken.
+   */
+  private announceToolChange(): void {
+    this.dispatchEvent(new Event('toolchange'));
+    if (typeof document !== 'undefined') {
+      document.dispatchEvent(new Event('toolchange'));
+    }
+  }
+
   async registerTool(tool: HarnessTool, options?: {signal?: AbortSignal}): Promise<void> {
     if (this.tools.has(tool.name)) {
       // Matches the spec, and therefore matches what a real browser does to you.
@@ -58,14 +71,14 @@ class HarnessModelContext extends EventTarget {
     }
 
     this.tools.set(tool.name, tool);
-    this.dispatchEvent(new Event('toolchange'));
+    this.announceToolChange();
 
     // There is no unregisterTool in the spec — aborting the signal IS how a tool
     // goes away, so the harness must honour it or lifecycle tests are meaningless.
     options?.signal?.addEventListener('abort', () => {
       if (this.tools.get(tool.name) === tool) {
         this.tools.delete(tool.name);
-        this.dispatchEvent(new Event('toolchange'));
+        this.announceToolChange();
       }
     });
   }
@@ -141,9 +154,10 @@ function safeParse(json: string): unknown {
  * ```
  *
  * It implements the parts of the spec that change test outcomes: duplicate names
- * reject with `InvalidStateError`, `toolchange` fires on registration and
- * unregistration, and `AbortSignal` really unregisters — so a test that destroys an
- * injector observes the tool disappear, exactly as in a browser.
+ * reject with `InvalidStateError`, `AbortSignal` really unregisters (so a test that
+ * destroys an injector observes the tool disappear, exactly as in a browser), and
+ * `toolchange` fires on **both** the model context and the `document` — the spec
+ * dispatches it on the document, so anything listening there must be notified.
  */
 export function installWebMcpTestHarness(): WebMcpHarness {
   if (typeof document === 'undefined') {

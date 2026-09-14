@@ -36,7 +36,7 @@ Additive ideas live in separate, clearly-marked entry points that you opt into k
 | `ng-webmcp-compat` | ✅ identical surface | `declareExperimentalWebMcpTool`, `provideExperimentalWebMcpTools`, types |
 | `/strict` | ❌ remove on migrate | `webMcpTool()` identity helper mitigating angular#70125 |
 | `/polyfill` | ❌ remove on migrate | `installWebMcpPolyfill()` — installs `document.modelContext` where the browser has none |
-| `/bridge` | ❌ no v22 equivalent | JSON-RPC over `postMessage`; routes tools to Claude Desktop / Cursor via the MCP-B relay |
+| `/bridge` | ❌ no v22 equivalent | `createWebMcpBridge()` — MCP over JSON-RPC 2.0, so tools reach Claude Desktop / Cursor via an extension or the MCP-B relay |
 | `/devtools` | ❌ dev only | inspector: list tools, view schemas, invoke manually |
 | `/testing` | ❌ test only | `installWebMcpTestHarness()` — assert on what your app exposes, with no browser |
 
@@ -80,7 +80,21 @@ expect(webmcp.has('add_to_cart')).toBe(true);
 expect(await webmcp.invoke('add_to_cart', {sku: 'A1', qty: 2})).toEqual({ok: true});
 ```
 
-Not yet done: the `/bridge` and `/devtools` entry points. See `docs/PLAN.md` §6.
+And the same tools can be exposed to MCP clients outside the page:
+
+```ts
+import {createWebMcpBridge} from 'ng-webmcp-compat/bridge';
+
+createWebMcpBridge({allowedOrigins: [window.location.origin]}).start();
+```
+
+WebMCP itself has no wire format — `document.modelContext` is an in-page API for the
+browser's own agent. The bridge speaks MCP over JSON-RPC 2.0 in postMessage envelopes
+compatible with `@mcp-b/transports`, so an extension or the local relay can reach your
+tools. **This is the one capability with no Angular 22 equivalent**, and the reason
+this package might outlive the migration.
+
+Not yet done: the `/devtools` inspector. See `docs/PLAN.md` §6.
 
 ## Layout
 

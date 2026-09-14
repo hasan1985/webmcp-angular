@@ -350,13 +350,12 @@ ng-webmcp-kit/
 | ~~M5~~ | ✅ Migrate schematic | `ng generate ng-webmcp-compat:migrate` — rewrites core imports to `@angular/core`, reports non-core entry points rather than guessing, removes the dependency only when nothing is left unresolved. **`CoreDelegationGuard` dropped, deliberately** (see below). | **Done** — 9 tests; dry-run against the real playground migrates 2 files and flags 2 |
 | ~~M6~~ | ✅ **Settled: no shim** | Leak measured in Chrome on Angular 20 (route providers leak, component scope does not). Shipping the documented component-scoped pattern instead — a `RouterFeature` cannot be minted for v20's router, and destroying route injectors by hand would affect every provider on the route, not just ours. | **Decided** — `docs/M0-FINDINGS.md` §7 |
 | M7 | ✅ `/testing` *(devtools deferred)* | `installWebMcpTestHarness()` — in-memory `document.modelContext` honouring duplicate-name rejection, `toolchange`, and `AbortSignal` unregistration | **Done** — 11 tests, driven through the real library rather than poking the harness directly |
-| M8 | `/bridge` (JSON-RPC) | postMessage transport, origin allowlist, MCP-B wire compat | A registered tool callable from Claude Desktop via local relay |
-| M9 | `/strict`, `ng add` | opt-in extras. `provideExperimentalWebMcpForms` lives in `@angular/forms/signals`, so core must not export it | — |
+| ~~M8~~ | ✅ `/bridge` (JSON-RPC) | `createWebMcpBridge()` — MCP over JSON-RPC 2.0 in `@mcp-b/transports`-compatible postMessage envelopes; `initialize`/`tools/list`/`tools/call`/`ping` + `list_changed`; origin allowlist required, not defaulted | **Done** — 20 tests plus real-Chrome verification; end-to-end tool call over the wire |
+| M9 | `/devtools`, `ng add` | inspector panel; `provideExperimentalWebMcpForms` lives in `@angular/forms/signals`, so core must not export it. *(`/strict` landed with the playground.)* | — |
 | M10 | 1.0 | docs, version matrix, spec-drift + upstream-tracking policy | npm publish |
 
-M0–M7 are complete or settled, and the core has been exercised in a real browser (see
-`../ng-webmcp-playground`). What remains is `/bridge` (M8) — the most differentiating
-piece, and the only one with no v22 equivalent — plus `/devtools`.
+M0–M8 are complete or settled. What remains for 1.0 is `/devtools`, docs, and a
+versioning/upstream-tracking policy.
 M8 is the only place your JSON-RPC idea belongs, and it can wait.
 
 ---

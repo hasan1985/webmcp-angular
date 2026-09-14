@@ -410,3 +410,42 @@ component, which is proven above to clean up correctly on **every** supported
 version, and is what `ng-webmcp-playground/src/app/notes/notes.page.ts` demonstrates.
 This is a real limitation of the backport and is called out as such rather than
 papered over.
+
+---
+
+## 8. The polyfill fires `toolchange` only on the ModelContext (measured)
+
+Found while verifying `/bridge` in Chrome, and it is the most instructive bug in this
+project so far.
+
+The spec says `toolchange` fires on the **document** and its descendants, so the
+bridge listened with `document.addEventListener('toolchange', …)`. Its jsdom tests
+passed. In a real polyfill-backed page, `notifications/tools/list_changed` **never
+fired** — `tools/list` stayed correct on demand, but a connected MCP client would
+silently go stale.
+
+Measured in Chrome against `@mcp-b/webmcp-polyfill` 5.1.0, navigating between routes:
+
+| Listener | Times called |
+|---|---|
+| `document.addEventListener('toolchange', …)` | **0** |
+| `modelContext.addEventListener('toolchange', …)` | 4 |
+| `modelContext.ontoolchange = …` | 4 |
+
+So the polyfill dispatches only on the ModelContext object.
+
+**Why the tests missed it:** `installWebMcpTestHarness()` dispatches on *both* the
+context and the document — which is faithful to the spec, and therefore **more
+generous than the real implementation**. A fake that is more capable than reality
+hides exactly this class of bug. The jsdom suite could not have caught it; only the
+browser could.
+
+**Fix:** the bridge now listens on both targets, and a regression test dispatches
+`toolchange` on the context alone. The harness keeps its spec-faithful behaviour —
+the lesson is not to weaken the fake, but that a transport-level feature needed a
+real browser to be believed.
+
+The general rule this earns: **anything that depends on where an event fires, or on
+`event.origin` / `event.source`, cannot be trusted from jsdom.** jsdom also leaves
+`event.origin` empty and `event.source` null for same-window `postMessage`, which is
+why `parity/specs/bridge.spec.ts` dispatches a hand-built `MessageEvent`.
