@@ -35,9 +35,14 @@ export interface InstallWebMcpPolyfillOptions {
  * // main.ts
  * import {installWebMcpPolyfill} from 'ng-webmcp-compat/polyfill';
  *
- * await installWebMcpPolyfill();
- * await bootstrapApplication(App, appConfig);
+ * installWebMcpPolyfill()
+ *   .then(() => bootstrapApplication(App, appConfig))
+ *   .catch((err) => console.error(err));
  * ```
+ *
+ * Use a `.then` chain, not top-level `await`: Angular's default browserslist
+ * targets reject it, and the build fails with "Top-level await is not available in
+ * the configured target environment".
  *
  * It is deliberately **not** an Angular provider. `provideExperimentalWebMcpTools`
  * registers its tools from an environment initializer during bootstrap, and loading
