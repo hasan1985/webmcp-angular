@@ -348,15 +348,15 @@ ng-webmcp-kit/
 | ~~M3~~ | ✅ **Parity suite** | `parity/` — shared spec + fake ModelContext, run against ours on 20/21/22 and against `@angular/core` on 22; `.d.ts` diff script; GitHub Actions matrix + weekly drift cron | **Done** — 12/12 on v20 and v21, 24/24 on v22; all 5 declarations match |
 | ~~M4~~ | ✅ Unsupported / SSR / polyfill | `/polyfill` entry point (`installWebMcpPolyfill`); SSR + unsupported-browser + cross-generation specs against the **built artifact**; real Angular SSR fixture prerendered via `scripts/check-packaging.mjs` | **Done** — 7 SSR, 15 env/polyfill tests; prerender emits `webmcp-supported: false`; regression-tested by removing the guard |
 | ~~M5~~ | ✅ Migrate schematic | `ng generate ng-webmcp-compat:migrate` — rewrites core imports to `@angular/core`, reports non-core entry points rather than guessing, removes the dependency only when nothing is left unresolved. **`CoreDelegationGuard` dropped, deliberately** (see below). | **Done** — 9 tests; dry-run against the real playground migrates 2 files and flags 2 |
-| M6 | `withExperimentalAutoCleanupInjectors` shim | Router-events injector cleanup, or documented component-scoped alternative. **Riskier than first assessed**: `RouterFeatureKind` is a numeric enum, v22 uses `10` | Route tools gone after navigation, proven by e2e |
+| ~~M6~~ | ✅ **Settled: no shim** | Leak measured in Chrome on Angular 20 (route providers leak, component scope does not). Shipping the documented component-scoped pattern instead — a `RouterFeature` cannot be minted for v20's router, and destroying route injectors by hand would affect every provider on the route, not just ours. | **Decided** — `docs/M0-FINDINGS.md` §7 |
 | M7 | `/testing` + `/devtools` | harness, matchers, inspector | Tools testable without a real browser agent |
 | M8 | `/bridge` (JSON-RPC) | postMessage transport, origin allowlist, MCP-B wire compat | A registered tool callable from Claude Desktop via local relay |
 | M9 | `/strict`, `ng add` | opt-in extras. `provideExperimentalWebMcpForms` lives in `@angular/forms/signals`, so core must not export it | — |
 | M10 | 1.0 | docs, version matrix, spec-drift + upstream-tracking policy | npm publish |
 
-M0–M4 are complete, and the core has been exercised in a real browser (see
-`../ng-webmcp-playground`). What stands between here and `0.1.0` is M5's migration
-schematic and a decision on M6.
+M0–M6 are complete or settled, and the core has been exercised in a real browser (see
+`../ng-webmcp-playground`). What remains for `0.1.0` is the optional entry points —
+`/testing` (M7) is the most useful, `/bridge` (M8) the most differentiating.
 M8 is the only place your JSON-RPC idea belongs, and it can wait.
 
 ---

@@ -371,3 +371,42 @@ Still not covered:
 - **Hydration ordering.** The fixture prerenders and reports unsupported server-side,
   but nothing yet asserts that tools *do* register on the client after hydration —
   the quieter and more damaging failure.
+
+---
+
+## 7. M6 settled: route-level providers do leak on Angular 20 (measured)
+
+The plan *assumed* this; the playground now *measures* it. A temporary route was
+added with `providers: [provideExperimentalWebMcpTools([probeLeakTool])]`, then
+navigated away from, in Chrome on Angular 20.3.31:
+
+| Registered via | After navigating away |
+|---|---|
+| Route-level `providers` | **still registered** — leaked |
+| Component constructor (`declareExperimentalWebMcpTool`) | correctly unregistered |
+
+```
+/game              → get_board, make_move, reset_game
+/leak              → + probe_leak
+back to /game      → probe_leak STILL PRESENT     ← the leak
+/notes             → + add_note, list_notes
+back to /game      → add_note, list_notes gone    ← component scope is fine
+```
+
+So the route-level environment injector is not destroyed on navigation before
+Angular 22, and `withExperimentalAutoCleanupInjectors()` is exactly what fixes it.
+
+**Decision: do not ship a shim.** Two reasons:
+
+1. `RouterFeatureKind` is a numeric enum and v22 uses `10` for this feature (§1.3),
+   so a backport cannot mint a valid `RouterFeature` for v20's router.
+2. The only other route is to watch router events and destroy route injectors
+   ourselves — destroying injectors the router still owns, which would affect every
+   other provider on that route, not just ours. The blast radius is the whole
+   application, to fix tool registration.
+
+The documented alternative is `declareExperimentalWebMcpTool()` in the routed
+component, which is proven above to clean up correctly on **every** supported
+version, and is what `ng-webmcp-playground/src/app/notes/notes.page.ts` demonstrates.
+This is a real limitation of the backport and is called out as such rather than
+papered over.

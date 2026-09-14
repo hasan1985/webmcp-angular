@@ -57,8 +57,19 @@ tools register, execute, and unregister on navigation. Hardened for server rende
 for browsers with no WebMCP at all — `npm run check:packaging` packs the library, installs
 the **tarball** into a real Angular SSR app and prerenders it.
 
-Not yet done: router cleanup (M6) and the `/bridge`, `/devtools` and `/testing`
-entry points. See `docs/PLAN.md` §6.
+### Known limitation: route-level providers
+
+Tools registered through a route's `providers` array **are not unregistered when you
+navigate away** on Angular 20 and 21 — measured, not assumed (`docs/M0-FINDINGS.md` §7).
+The route's environment injector outlives the route; Angular 22 fixes this with
+`withExperimentalAutoCleanupInjectors()`, which cannot be backported (its
+`RouterFeature` kind is a v22 enum value).
+
+Declare page-scoped tools with `declareExperimentalWebMcpTool()` in the routed
+component instead — that cleans up correctly on every supported version.
+
+Not yet done: the `/bridge`, `/devtools` and `/testing` entry points. See
+`docs/PLAN.md` §6.
 
 ## Layout
 
