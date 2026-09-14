@@ -1,0 +1,22 @@
+{
+  "name": "ng-webmcp-compat",
+  "version": "0.0.1",
+  "description": "API-compatible backport of Angular v22's experimental WebMCP support for Angular 20 and 21.",
+  "keywords": ["angular", "webmcp", "model-context", "ai-agents", "backport", "modelContext"],
+  "license": "MIT",
+  "peerDependencies": {
+    "@angular/common": ">=20 <24",
+    "@angular/core": ">=20 <24",
+    "@angular/router": ">=20 <24",
+    "@mcp-b/webmcp-polyfill": "*"
+  },
+  "peerDependenciesMeta": {
+    "@angular/router": { "optional": true },
+    "@mcp-b/webmcp-polyfill": { "optional": true }
+  },
+  "dependencies": {
+    "tslib": "^2.3.0",
+    "@mcp-b/webmcp-types": "^5.1.0"
+  },
+  "sideEffects": false
+}

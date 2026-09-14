@@ -1,59 +1,63 @@
-# NgWebmcpCompat
+# ng-webmcp-compat
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.37.
+An **API-compatible backport of Angular v22's experimental [WebMCP](https://angular.dev/ai/webmcp) support** for Angular 20 and 21.
 
-## Development server
+WebMCP is a [W3C Web Machine Learning CG draft](https://webmachinelearning.github.io/webmcp/) that lets a page expose typed, callable tools to AI agents through `document.modelContext`. Angular v22 ships first-party support. This package brings that same API to Angular 20+.
 
-To start a local development server, run:
+## The governing rule
 
-```bash
-ng serve
+> **Everything in this package exists to be deleted.**
+
+Success is not "the best Angular WebMCP library." It is: *the day your app reaches Angular 22, swapping `ng-webmcp-compat` for `@angular/core` changes no application code except imports.*
+
+```ts
+import { provideExperimentalWebMcpTools } from 'ng-webmcp-compat';
+// at Angular 22 ──▶
+import { provideExperimentalWebMcpTools } from '@angular/core';
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Every symbol in the **core** entry point is signature-identical to `@angular/core` v22 — including [a known upstream typing defect](https://github.com/angular/angular/issues/70125), which is reproduced deliberately rather than fixed, because a "better" signature that accepts code v22 rejects is a migration trap.
 
-## Code scaffolding
+Additive ideas live in separate, clearly-marked entry points that you opt into knowing they won't survive the migration.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Entry points
 
-```bash
-ng generate component component-name
+| Entry point | Migrates to v22? | Contents |
+|---|---|---|
+| `ng-webmcp-compat` | ✅ identical surface | `declareExperimentalWebMcpTool`, `provideExperimentalWebMcpTools`, types |
+| `/strict` | ❌ remove on migrate | `webMcpTool()` identity helper working around angular#70125 |
+| `/bridge` | ❌ no v22 equivalent | JSON-RPC over `postMessage`; routes tools to Claude Desktop / Cursor via the MCP-B relay |
+| `/devtools` | ❌ dev only | inspector: list tools, view schemas, invoke manually |
+| `/testing` | ❌ test only | polyfill harness, matchers, fake agent invoker |
+
+`/bridge` is the one genuinely additive capability Angular has no plan for, and the only reason this package might outlive the migration.
+
+## Status
+
+Scaffold + verified types and runtime adapter. The two public runtime functions are **not yet implemented** — see `docs/PLAN.md` §6 for milestones and `docs/M0-FINDINGS.md` §5 for what still needs verifying against a real Angular 22 `.d.ts`.
+
+The release gate is **M3, the parity suite**: one spec file run against both this implementation and a v22 fixture app using `@angular/core`, across an Angular 20/21/22 CI matrix. Without it there is no evidence backing the compatibility claim, which is the entire product.
+
+## Layout
+
+```
+projects/ng-webmcp-compat/   the library (5 entry points)
+projects/demo/               sample app + e2e target
+docs/PLAN.md                 requirements, architecture, milestones, risks
+docs/M0-FINDINGS.md          verified findings + corrections to the plan
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Development
 
 ```bash
-ng generate --help
+npm install
+npx ng build ng-webmcp-compat     # builds all 5 entry points to dist/
+npx ng test ng-webmcp-compat
+npx ng serve demo
 ```
 
-## Building
+Native WebMCP currently requires Chromium with `--enable-features=WebMCP`. Without it the library degrades to a no-op with one dev-mode warning — it never throws.
 
-To build the project run:
+## License
 
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+MIT
