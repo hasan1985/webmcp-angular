@@ -38,7 +38,7 @@ Additive ideas live in separate, clearly-marked entry points that you opt into k
 | `/polyfill` | ❌ remove on migrate | `installWebMcpPolyfill()` — installs `document.modelContext` where the browser has none |
 | `/bridge` | ❌ no v22 equivalent | JSON-RPC over `postMessage`; routes tools to Claude Desktop / Cursor via the MCP-B relay |
 | `/devtools` | ❌ dev only | inspector: list tools, view schemas, invoke manually |
-| `/testing` | ❌ test only | polyfill harness, matchers, fake agent invoker |
+| `/testing` | ❌ test only | `installWebMcpTestHarness()` — assert on what your app exposes, with no browser |
 
 `/bridge` is the one genuinely additive capability Angular has no plan for, and the only reason this package might outlive the migration.
 
@@ -68,8 +68,19 @@ The route's environment injector outlives the route; Angular 22 fixes this with
 Declare page-scoped tools with `declareExperimentalWebMcpTool()` in the routed
 component instead — that cleans up correctly on every supported version.
 
-Not yet done: the `/bridge`, `/devtools` and `/testing` entry points. See
-`docs/PLAN.md` §6.
+Testing your own tools needs no browser:
+
+```ts
+import {installWebMcpTestHarness} from 'ng-webmcp-compat/testing';
+
+const webmcp = installWebMcpTestHarness();
+afterEach(() => webmcp.uninstall());
+
+expect(webmcp.has('add_to_cart')).toBe(true);
+expect(await webmcp.invoke('add_to_cart', {sku: 'A1', qty: 2})).toEqual({ok: true});
+```
+
+Not yet done: the `/bridge` and `/devtools` entry points. See `docs/PLAN.md` §6.
 
 ## Layout
 

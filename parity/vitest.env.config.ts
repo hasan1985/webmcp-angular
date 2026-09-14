@@ -15,6 +15,10 @@ export default defineConfig({
   test: {
     name: 'env',
     environment: 'jsdom',
-    include: ['specs/unsupported.spec.ts', 'specs/polyfill.spec.ts'],
+    include: [
+      'specs/unsupported.spec.ts',
+      'specs/polyfill.spec.ts',
+      'specs/testing-harness.spec.ts',
+    ],
   },
 });
