@@ -347,7 +347,7 @@ ng-webmcp-kit/
 | ~~M2~~ | ✅ Core API surface | `declareExperimentalWebMcpTool`, `provideExperimentalWebMcpTools`, types. No env-initializer shim needed at a v20 floor | **Done** — emitted `.d.ts` signatures match v22 |
 | ~~M3~~ | ✅ **Parity suite** | `parity/` — shared spec + fake ModelContext, run against ours on 20/21/22 and against `@angular/core` on 22; `.d.ts` diff script; GitHub Actions matrix + weekly drift cron | **Done** — 12/12 on v20 and v21, 24/24 on v22; all 5 declarations match |
 | ~~M4~~ | ✅ Unsupported / SSR / polyfill | `/polyfill` entry point (`installWebMcpPolyfill`); SSR + unsupported-browser + cross-generation specs against the **built artifact**; real Angular SSR fixture prerendered via `scripts/check-packaging.mjs` | **Done** — 7 SSR, 15 env/polyfill tests; prerender emits `webmcp-supported: false`; regression-tested by removing the guard |
-| M5 | v22 delegation + migrate schematic | `CoreDelegationGuard`, `ng generate :migrate`. *(The packaging check landed early with M4 — `scripts/check-packaging.mjs`.)* | Migration = one command, zero source edits |
+| ~~M5~~ | ✅ Migrate schematic | `ng generate ng-webmcp-compat:migrate` — rewrites core imports to `@angular/core`, reports non-core entry points rather than guessing, removes the dependency only when nothing is left unresolved. **`CoreDelegationGuard` dropped, deliberately** (see below). | **Done** — 9 tests; dry-run against the real playground migrates 2 files and flags 2 |
 | M6 | `withExperimentalAutoCleanupInjectors` shim | Router-events injector cleanup, or documented component-scoped alternative. **Riskier than first assessed**: `RouterFeatureKind` is a numeric enum, v22 uses `10` | Route tools gone after navigation, proven by e2e |
 | M7 | `/testing` + `/devtools` | harness, matchers, inspector | Tools testable without a real browser agent |
 | M8 | `/bridge` (JSON-RPC) | postMessage transport, origin allowlist, MCP-B wire compat | A registered tool callable from Claude Desktop via local relay |
@@ -360,6 +360,24 @@ schematic and a decision on M6.
 M8 is the only place your JSON-RPC idea belongs, and it can wait.
 
 ---
+
+### 6.1 Why `CoreDelegationGuard` was dropped
+
+The plan called for detecting `@angular/core`'s own implementation at runtime and
+delegating to it on v22+, with a dev-mode "you can migrate now" notice.
+
+Both halves turned out to be wrong:
+
+- **The notice breaks parity.** M4's unsupported-browser spec asserts the library
+  logs *nothing* — because v22 returns early without comment, and silence is part of
+  the contract. Any migration notice would fire in that path too.
+- **Delegation buys nothing.** The parity suite runs our implementation against
+  Angular 22 and it passes 24/24. There is no behaviour to fall back to, only an
+  extra branch and a second failure mode.
+
+The concern it was meant to address — mixed imports during a migration causing
+duplicate registrations — is handled better by the schematic, which rewrites
+atomically so the mixed state never persists.
 
 ## 7. Risks
 

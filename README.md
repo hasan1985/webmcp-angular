@@ -16,6 +16,15 @@ import { provideExperimentalWebMcpTools } from 'ng-webmcp-compat';
 import { provideExperimentalWebMcpTools } from '@angular/core';
 ```
 
+And you do not have to do it by hand:
+
+```bash
+ng generate ng-webmcp-compat:migrate --dry-run
+```
+
+It rewrites core imports, reports anything from a non-core entry point instead of
+guessing, and removes the dependency only once nothing is left unresolved.
+
 Every symbol in the **core** entry point is signature-identical to `@angular/core` v22 — including [a known upstream typing defect](https://github.com/angular/angular/issues/70125), which is reproduced deliberately rather than fixed, because a "better" signature that accepts code v22 rejects is a migration trap.
 
 Additive ideas live in separate, clearly-marked entry points that you opt into knowing they won't survive the migration.
@@ -48,8 +57,8 @@ tools register, execute, and unregister on navigation. Hardened for server rende
 for browsers with no WebMCP at all — `npm run check:packaging` packs the library, installs
 the **tarball** into a real Angular SSR app and prerenders it.
 
-Not yet done: the migration schematic (M5), router cleanup (M6), and the `/bridge`,
-`/devtools` and `/testing` entry points. See `docs/PLAN.md` §6.
+Not yet done: router cleanup (M6) and the `/bridge`, `/devtools` and `/testing`
+entry points. See `docs/PLAN.md` §6.
 
 ## Layout
 
@@ -58,6 +67,7 @@ projects/ng-webmcp-compat/   the library (5 entry points)
 parity/                      the M3 release gate — spec suite + .d.ts diff
 fixtures/ssr-consumer/       real Angular SSR app, prerendered against the tarball
 scripts/check-packaging.mjs  packs, installs the tarball, prerenders, asserts
+projects/…/schematics/       ng generate ng-webmcp-compat:migrate
 docs/PLAN.md                 requirements, architecture, milestones, risks
 docs/M0-FINDINGS.md          verified findings + corrections to the plan
 ```

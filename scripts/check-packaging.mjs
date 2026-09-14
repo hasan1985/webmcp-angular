@@ -44,11 +44,24 @@ const fail = (message, detail) => {
   process.exit(1);
 };
 
-step(1, 'Build the library');
+step(1, 'Build the library (including schematics)');
 try {
-  run('npx', ['ng', 'build', 'ng-webmcp-compat'], repo);
+  run('npm', ['run', 'build:lib'], repo);
 } catch (error) {
   fail('Library build failed.', error.stdout || error.stderr);
+}
+
+// ng-packagr does not build schematics, so they are easy to forget and would ship
+// broken: `ng generate ng-webmcp-compat:migrate` fails with a confusing error if
+// the collection is missing from the package.
+for (const required of [
+  'schematics/collection.json',
+  'schematics/migrate/index.js',
+  'schematics/migrate/schema.json',
+]) {
+  if (!existsSync(join(dist, required))) {
+    fail(`Missing ${required} in dist — run scripts/build-schematics.mjs.`);
+  }
 }
 
 step(2, 'Pack the tarball');
@@ -121,4 +134,5 @@ console.log(`
   · tarball installs and resolves in a real Angular app
   · secondary entry points type-check at a consumer
   · prerender succeeds with no document, and registers nothing server-side
+  · the migrate schematic collection is present in the package
 ${buildOutput.includes('Prerendered') ? '' : '  (note: build output did not mention prerendering — verify the fixture still uses outputMode "static")\n'}`);

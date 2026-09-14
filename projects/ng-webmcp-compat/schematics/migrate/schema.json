@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "NgWebmcpCompatMigrate",
+  "title": "Migrate to @angular/core",
+  "type": "object",
+  "properties": {
+    "path": {
+      "type": "string",
+      "description": "Directory to migrate. Defaults to the whole project.",
+      "default": "/"
+    },
+    "dryRun": {
+      "type": "boolean",
+      "description": "Report what would change without writing. The Angular CLI's own --dry-run also works.",
+      "default": false
+    }
+  },
+  "additionalProperties": false
+}

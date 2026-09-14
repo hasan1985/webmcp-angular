@@ -1,0 +1,10 @@
+{
+  "$schema": "../../../node_modules/@angular-devkit/schematics/collection-schema.json",
+  "schematics": {
+    "migrate": {
+      "description": "Rewrite ng-webmcp-compat imports to @angular/core once the project is on Angular 22+.",
+      "factory": "./migrate/index#migrate",
+      "schema": "./migrate/schema.json"
+    }
+  }
+}

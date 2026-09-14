@@ -5,13 +5,16 @@
   "scripts": {
     "test:v20": "vitest run --config vitest.v20.config.ts",
     "test:v22": "vitest run --config vitest.v22.config.ts",
-    "test": "npm run test:v20 && npm run test:v21 && npm run test:v22 && npm run test:ssr && npm run test:env",
+    "test": "npm run test:v20 && npm run test:v21 && npm run test:v22 && npm run test:ssr && npm run test:env && npm run test:schematics",
     "test:v21": "vitest run --config vitest.v21.config.ts",
     "test:api-diff": "node scripts/api-diff.mjs",
     "test:ssr": "vitest run --config vitest.ssr.config.ts",
-    "test:env": "vitest run --config vitest.env.config.ts"
+    "test:env": "vitest run --config vitest.env.config.ts",
+    "test:schematics": "vitest run --config vitest.schematics.config.ts"
   },
   "devDependencies": {
+    "@angular-devkit/core": "^20.3.37",
+    "@angular-devkit/schematics": "^20.3.37",
     "@angular/core": "22.1.6",
     "@angular/core-v20": "npm:@angular/core@20.3.31",
     "@angular/core-v21": "npm:@angular/core@21.2.23",
