@@ -1,0 +1,41 @@
+name: parity
+
+# The M3 release gate. Proves ng-webmcp-compat matches @angular/core's
+# experimental WebMCP API in both behaviour and types. If this fails, the
+# compatibility claim the package is built on is no longer true.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Angular may change this API outside a major — catch drift weekly, not at
+    # the moment a user migrates.
+    - cron: '0 6 * * 1'
+
+jobs:
+  behaviour:
+    name: spec suite (Angular ${{ matrix.angular }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        angular: [20, 21, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --prefix parity
+      - run: npm --prefix parity run test:v${{ matrix.angular }}
+
+  types:
+    name: .d.ts diff vs @angular/core
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm ci --prefix parity
+      - run: npm run test:api-diff

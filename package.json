@@ -6,7 +6,11 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "build:lib": "ng build ng-webmcp-compat",
+    "test:parity": "npm --prefix parity test",
+    "test:api-diff": "npm run build:lib && node parity/scripts/api-diff.mjs",
+    "verify": "npm run test:api-diff && npm run test:parity"
   },
   "prettier": {
     "printWidth": 100,

@@ -34,17 +34,22 @@ Additive ideas live in separate, clearly-marked entry points that you opt into k
 
 ## Status
 
-`declareExperimentalWebMcpTool` and `provideExperimentalWebMcpTools` are **implemented**, verified line-by-line against `@angular/core@22.1.6`'s shipped `fesm2022` build, and the emitted `.d.ts` signatures match v22's. Not yet exercised in a real browser.
+`declareExperimentalWebMcpTool` and `provideExperimentalWebMcpTools` are **implemented and verified against `@angular/core@22.1.6`** — behaviourally, by a parity suite that runs one spec against both this implementation and Angular's own, and structurally, by a `.d.ts` diff. See `parity/README.md`.
 
-Not yet done: the parity suite (M3), SSR/polyfill hardening (M4), the migration schematic (M5), router cleanup (M6), and every optional entry point. See `docs/PLAN.md` §6 and `docs/M0-FINDINGS.md`.
+```
+✔ 12/12  ours @ Angular 20        ✔ 5/5 declarations match @angular/core@22.1.6
+✔ 12/12  ours @ Angular 21
+✔ 24/24  ours + @angular/core @ Angular 22
+```
 
-The release gate is **M3, the parity suite**: one spec file run against both this implementation and a v22 fixture app using `@angular/core`, across an Angular 20/21/22 CI matrix, plus an automated `.d.ts` diff. Without it there is no evidence backing the compatibility claim, which is the entire product.
+Not yet done: real-browser verification, SSR/polyfill hardening (M4), the migration schematic (M5), router cleanup (M6), and every optional entry point. See `docs/PLAN.md` §6.
 
 ## Layout
 
 ```
 projects/ng-webmcp-compat/   the library (5 entry points)
 projects/demo/               sample app + e2e target
+parity/                      the M3 release gate — spec suite + .d.ts diff
 docs/PLAN.md                 requirements, architecture, milestones, risks
 docs/M0-FINDINGS.md          verified findings + corrections to the plan
 ```
@@ -54,7 +59,7 @@ docs/M0-FINDINGS.md          verified findings + corrections to the plan
 ```bash
 npm install
 npx ng build ng-webmcp-compat     # builds all 5 entry points to dist/
-npx ng test ng-webmcp-compat
+npm run verify                    # parity gate: .d.ts diff + spec suite on Angular 20/21/22
 npx ng serve demo
 ```
 

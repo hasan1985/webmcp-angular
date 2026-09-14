@@ -1,0 +1,23 @@
+{
+  "name": "parity",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:v20": "vitest run --config vitest.v20.config.ts",
+    "test:v22": "vitest run --config vitest.v22.config.ts",
+    "test": "npm run test:v20 && npm run test:v21 && npm run test:v22",
+    "test:v21": "vitest run --config vitest.v21.config.ts",
+    "test:api-diff": "node scripts/api-diff.mjs"
+  },
+  "devDependencies": {
+    "@angular/core": "22.1.6",
+    "@angular/core-v20": "npm:@angular/core@20.3.31",
+    "@angular/core-v21": "npm:@angular/core@21.2.23",
+    "@mcp-b/webmcp-types": "^5.1.0",
+    "jsdom": "^27.0.0",
+    "rxjs": "^7.8.0",
+    "typescript": "~5.9.0",
+    "vitest": "^3.2.0",
+    "zone.js": "^0.15.0"
+  }
+}
