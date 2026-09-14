@@ -1,22 +1,166 @@
-# M0 — Fidelity findings
+# M0 — Fidelity findings (CLOSED)
 
-Verified against real installed sources, not documentation prose.
+Verified against real shipped sources, not documentation prose.
 
-- Workspace Angular: **20.3.31**
-- `@mcp-b/webmcp-types`: **5.1.0** (depends on `@modelcontextprotocol/server` 2.0.0)
-- Source read: `node_modules/@mcp-b/webmcp-types/src/{index,common,json-schema,tool,model-context}.ts`
+| Source | Version |
+|---|---|
+| Workspace Angular | 20.3.31 |
+| `@angular/core` read for parity | **22.1.6** (`latest`) — `types/core.d.ts`, `fesm2022/core.mjs` |
+| `@angular/forms`, `@angular/router` read for placement | 22.1.6 |
+| `@mcp-b/webmcp-types` | 5.1.0 (deps `@modelcontextprotocol/server` 2.0.0) |
 
-Status: **partial.** Everything below is confirmed from the types package. The
-remaining M0 item — reading Angular v22's real `@angular/core` `.d.ts` — is still
-open (see §5).
+**M0 §5 of the previous revision is now closed.** Every item is answered below.
+`docs/PLAN.md` §2 was inferred from documentation and was wrong in four places.
 
 ---
 
-## 1. Corrections to `docs/PLAN.md`
+## 1. Corrections to the Angular API in PLAN §2
 
-### 1.1 `executeTool` is NOT part of the standard API — PLAN §1.1 was wrong
+### 1.1 `execute` takes a SECOND parameter, and returns `unknown` — not `{content: [...]}`
 
-The spec's `ModelContext` interface is only:
+Documentation showed a one-arg callback returning a `{content: [{type, text}]}`
+envelope. The shipped type:
+
+```ts
+interface Client {
+  signal: AbortSignal;
+}
+
+type Execute<InputSchema extends JsonSchemaForInference> = (
+  args: InferArgsFromInputSchema<InputSchema>,
+  client: Client,
+) => unknown;
+```
+
+Two consequences:
+
+- **`WebMcpToolResult` does not exist.** Angular has no such type. The JSDoc says the
+  result "is typically just a raw `string`" and is serialized for the agent. Our
+  previously-scaffolded `WebMcpToolResult` was an invention; it has been deleted.
+- **Tools receive a cancellation signal.** `Client` is exported publicly as
+  `WebMcpClient`. Every tool can honour agent-side abort.
+
+### 1.2 The real exported names
+
+```ts
+// @angular/core@22.1.6 — aliased on export
+export type {
+  Client        as WebMcpClient,
+  ToolDescriptor as WebMcpToolDescriptor,
+  Execute        as WebMcpToolExecute,
+};
+export { declareExperimentalWebMcpTool, provideExperimentalWebMcpTools };
+```
+
+`WebMcpToolDescriptor` has exactly four members — `name`, `description`, `inputSchema`,
+`execute`. **No `title`, no `annotations`, no `exposedTo`.** Angular exposes none of the
+spec's annotation hints.
+
+### 1.3 The other two symbols are not in `@angular/core`
+
+PLAN §2 listed all four together. Verified placement:
+
+| Symbol | Package |
+|---|---|
+| `declareExperimentalWebMcpTool`, `provideExperimentalWebMcpTools` | `@angular/core` |
+| `provideExperimentalWebMcpForms` | **`@angular/forms/signals`** |
+| `withExperimentalAutoCleanupInjectors` | **`@angular/router`** |
+
+So the core entry point must **not** export the latter two — doing so would break parity.
+
+Signal Forms option shape, from `FormOptions<TModel>`:
+
+```ts
+experimentalWebMcpTool?: {
+  name: string;         // The unique name of the WebMCP tool to create from this form.
+  description: string;  // A description of the tool's purpose and usage information.
+};
+```
+
+Router feature:
+
+```ts
+type ExperimentalAutoCleanupInjectorsFeature =
+  RouterFeature<RouterFeatureKind.ExperimentalAutoCleanupInjectorsFeature>;  // kind = 10
+declare function withExperimentalAutoCleanupInjectors(): ExperimentalAutoCleanupInjectorsFeature;
+```
+
+`RouterFeatureKind` is a numeric enum and `10` is v22's value. A backport cannot mint a
+valid `RouterFeature` for v20's router without matching its enum — **this confirms M6 as
+the riskiest item** and strengthens the case for the documented component-scoped fallback
+over a shim.
+
+### 1.4 Duplicate names produce an unhandled rejection, not a throw
+
+PLAN FR-1.4 said "matches v22: throw." The shipped implementation:
+
+```js
+function provideExperimentalWebMcpTools(tools) {
+  return makeEnvironmentProviders([provideEnvironmentInitializer(() => {
+    for (const tool of tools) declareExperimentalWebMcpTool(tool);   // NOT awaited
+  })]);
+}
+```
+
+`declareExperimentalWebMcpTool` is `async` and awaits `modelContext.registerTool`, which
+rejects with `InvalidStateError` on a duplicate name. Because the loop does not await,
+a collision surfaces as an **unhandled promise rejection** — it does not throw
+synchronously and does not fail bootstrap. Reproduced verbatim.
+
+---
+
+## 2. The complete v22 implementation (25 lines)
+
+```js
+async function declareExperimentalWebMcpTool(tool, injector) {
+  if (typeof ngServerMode !== 'undefined' && ngServerMode) return;
+  const modelContext = globalThis.document.modelContext ?? globalThis.navigator.modelContext;
+  if (!modelContext || typeof modelContext.registerTool !== 'function') return;
+  if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+    if (!injector) assertInInjectionContext(declareExperimentalWebMcpTool);
+  }
+  const currentInjector = injector ?? inject(Injector);
+  const destroyRef = currentInjector.get(DestroyRef);
+  const abortCtrl = new AbortController();
+  const wrappedTool = {
+    ...tool,
+    execute: (args, client) => {
+      const signal = client?.signal
+        ? AbortSignal.any([abortCtrl.signal, client.signal])
+        : abortCtrl.signal;
+      return runInInjectionContext(currentInjector, () =>
+        tool.execute(args, {...client, signal}));
+    },
+  };
+  destroyRef.onDestroy(() => void abortCtrl.abort());
+  await modelContext.registerTool(wrappedTool, {signal: abortCtrl.signal});
+}
+```
+
+Observations that matter:
+
+1. **`DestroyRef → AbortController → registerTool({signal})` is confirmed** as the entire
+   lifecycle — PLAN §4's central claim holds exactly.
+2. **`AbortSignal.any([appTeardown, agentCancel])`** composes the two cancellation
+   sources, so either the injector being destroyed or the agent aborting ends the call.
+3. **Silent no-op when unsupported** — early `return`, no warning, no throw.
+4. **Resolution order is `document` then `navigator`**, matching our adapter.
+5. Every primitive it uses (`assertInInjectionContext`, `provideEnvironmentInitializer`,
+   `makeEnvironmentProviders`, `runInInjectionContext`, `DestroyRef`) **exists in Angular
+   20** — so the backport needs no shims at all at a v20 floor.
+
+### 2.1 One deliberate divergence
+
+v22 guards SSR with the `ngServerMode` build global. That global is not reliable pre-v22,
+so `declare-tool.ts` uses `typeof document === 'undefined'` instead. Behaviourally
+identical, and it also avoids v22's latent `globalThis.document.modelContext` throw when
+`document` is absent.
+
+---
+
+## 3. Findings from `@mcp-b/webmcp-types` 5.1.0
+
+### 3.1 `executeTool` is NOT standard
 
 ```ts
 interface ModelContext extends EventTarget {
@@ -24,79 +168,47 @@ interface ModelContext extends EventTarget {
   getTools(options?): Promise<RegisteredTool[]>;
   ontoolchange: ((this: ModelContext, event: Event) => unknown) | null;
 }
-```
-
-`executeTool` lives in a separate, optional `ChromeModelContextExtensions`:
-
-```ts
 interface ChromeModelContextExtensions {
   executeTool?(tool, inputArguments: string, options?): Promise<string | null>;
 }
-export type ChromeModelContext = ModelContext & ChromeModelContextExtensions;
 ```
 
-**Impact:** the adapter must feature-detect `executeTool` and never assume it. It
-matters only for `/devtools` (manual invocation) and `/testing` — the core library
-never calls it.
+PLAN §1.1 listed `executeTool` as standard. It is an optional Chromium extension —
+feature-detect it. Needed only by `/devtools` and `/testing`; core never calls it.
 
-### 1.2 `ToolDescriptor` from `@mcp-b` is the WRONG shape to reuse — PLAN FR-1.5 was wrong
-
-The plan said "re-export types from `@mcp-b/webmcp-types` rather than redefining."
-That is not possible. The two are generic over different things:
+### 3.2 `@mcp-b`'s `ToolDescriptor` cannot be reused (PLAN FR-1.5 was wrong)
 
 ```ts
 // @mcp-b/webmcp-types — generic over ARGS
 type ToolDescriptor<TArgs extends WebMcpToolInput, TResult, TName extends string> = ...
-
-// Angular v22 — generic over the SCHEMA
-interface WebMcpToolDescriptor<InputSchema extends JsonSchemaForInference> {
-  name: string; description: string; inputSchema: InputSchema; execute: Execute<InputSchema>;
-}
+// @angular/core v22 — generic over the SCHEMA
+interface ToolDescriptor<InputSchema extends JsonSchemaForInference> { ... }
 ```
 
-**Revised FR-1.5:** define `WebMcpToolDescriptor` ourselves to match Angular exactly,
-and borrow from `@mcp-b/webmcp-types` only the two inference primitives Angular also
-borrows:
+**Revised FR-1.5:** define `WebMcpToolDescriptor` locally to match Angular, and borrow
+only the two inference primitives Angular itself borrows:
 
 ```ts
-import type { JsonSchemaForInference, InferArgsFromInputSchema } from '@mcp-b/webmcp-types';
+import type {JsonSchemaForInference, InferArgsFromInputSchema} from '@mcp-b/webmcp-types';
 ```
 
-`JsonSchemaForInference` is simply `JsonSchemaType` re-exported from
+Confirmed as exactly what v22 does — `core.d.ts` line 19:
+
+```ts
+import { JsonSchemaForInference, InferArgsFromInputSchema }
+  from '../third_party/@mcp-b/webmcp-types/index.js';
+```
+
+`JsonSchemaForInference` is `JsonSchemaType` re-exported from
 `@modelcontextprotocol/server`, so the constraint is identical by construction.
-`InferArgsFromInputSchema` is almost certainly Angular's `InferArgs`, but that is the
-one inference still to be confirmed in §5.
 
-### 1.3 `consequentialHint` is not in the types package
+### 3.3 `consequentialHint` is not in the types package
 
-PLAN §1.1 listed three annotations from the spec draft. The types package ships only:
+Ships only `readOnlyHint` and `untrustedContentHint` (plus MCP's own annotations).
+`consequentialHint` appears in spec prose but not in the types — live spec drift.
+Moot for the core surface, since Angular has no `annotations` property at all.
 
-```ts
-interface WebMcpToolAnnotations {
-  readOnlyHint?: boolean;
-  untrustedContentHint?: boolean;
-}
-type ToolAnnotations = McpToolAnnotations & WebMcpToolAnnotations;  // MCP adds destructive/idempotent/openWorld
-```
-
-`consequentialHint` appears in the spec prose but not here — live spec drift. Angular's
-`WebMcpToolDescriptor` has **no `annotations` property at all**, so this does not affect
-the core surface. Do not build anything on `consequentialHint`.
-
----
-
-## 2. Confirmed, and load-bearing for the design
-
-**Unregistration is `AbortSignal`-only.** Confirmed:
-
-```ts
-interface ModelContextRegisterToolOptions { signal?: AbortSignal; exposedTo?: string[]; }
-```
-
-No `unregisterTool` anywhere. The `DestroyRef → AbortController → registerTool({signal})`
-chain in PLAN §4 is correct and is the whole lifecycle. Build it first (M1).
-
-**Globals are already declared by the types package** — we must not re-declare them:
+### 3.4 Globals are already declared — do not re-declare
 
 ```ts
 interface Document { readonly modelContext?: ModelContext; }
@@ -106,67 +218,53 @@ interface Navigator {
 }
 ```
 
-Both are **optional**, so `document.modelContext?.registerTool(...)` type-checks and the
-"unsupported browser" path (FR-3.3) falls out of the type system for free.
+Both **optional**, so the unsupported-browser path falls out of the type system for free.
+`globalThis.ModelContext` may be undefined — a bare reference throws `ReferenceError`;
+guard with `typeof ModelContext !== 'undefined'`.
 
-**`globalThis.ModelContext` may be undefined.** The package warns a bare reference throws
-`ReferenceError`; guard with `typeof ModelContext !== 'undefined'`.
+`ngDevMode` is likewise already declared by `@angular/core` — re-declaring it is a
+`TS2451` build error.
 
 ---
 
-## 3. New adapter requirements this uncovered
+## 4. New adapter requirements
 
-### FR-3.5 — `RegisteredTool.inputSchema` has two generations
+**FR-3.5 — `RegisteredTool.inputSchema` has two generations.**
 
 ```ts
 inputSchema?: InputSchema | string;
 ```
 
-Per the comment: an object since webmcp#241, rolling out from **Chrome 154.0.8013**
-(cross-document tools first); **Chrome 149–153 — most of the current Origin Trial
-population — and 154's same-document tools still return a serialized JSON string.**
-Consumers must branch on `typeof` and guard the parse of the string arm.
+An object since webmcp#241, rolling out from **Chrome 154.0.8013** (cross-document tools
+first); **Chrome 149–153 — most of the current Origin Trial population — and 154's
+same-document tools still return a serialized JSON string.** Branch on `typeof` and guard
+the parse. Implemented as `normalizeInputSchema()`.
 
-Only affects code reading `getTools()` (`/devtools`, `/testing`), not registration.
+**FR-3.6 — `RegisteredTool.title` defaults to `''`**, so `??` does not fall through. Read
+as `tool.title || tool.name`. (webmcp#224 proposes omitting the member instead — handle
+both.) Implemented as `displayTitle()`.
 
-### FR-3.6 — `RegisteredTool.title` defaults to `''`
+**FR-3.7 — `navigator.modelContextTesting`** is a deprecated third surface
+(`listTools()`, `executeTool()`, `ontoolchange`) from older Chromium previews. Useful for
+`/testing`; not for core.
 
-The spec defaults it to the empty string, so `??` does **not** fall through. Read it as
-`tool.title || tool.name`. (webmcp#224 proposes omitting the member instead — handle both.)
+Resolution order is unchanged and now confirmed against v22's own implementation:
 
-### FR-3.7 — `navigator.modelContextTesting` is a third fallback
-
-A deprecated `ModelContextTesting` surface (`listTools()`, `executeTool()`, `ontoolchange`)
-from older Chromium previews. Angular's own tests use it. Useful for `/testing`; not for core.
+```
+document.modelContext → navigator.modelContext → polyfill → no-op
+```
 
 ---
 
-## 4. Revised adapter resolution order
+## 5. Consequences for the plan
 
-```
-document.modelContext              // canonical, Chrome 150+
-  → navigator.modelContext         // deprecated, Chrome 149
-  → polyfill (@mcp-b/webmcp-polyfill, optional peer)
-  → no-op + single dev-mode warning
-```
-
-Unchanged from PLAN FR-3.1 — now confirmed against the ambient type declarations.
-
----
-
-## 5. Still open — blocks final sign-off on PLAN §2
-
-Read from a real Angular 22 install (`node_modules/@angular/core/index.d.ts`) and record here:
-
-1. Exact `WebMcpToolDescriptor` — does it really have no `title` / `annotations`?
-2. The real name and definition of Angular's `Execute<InputSchema>` /
-   `WebMcpToolExecute`, and whether its arg type is `InferArgsFromInputSchema`.
-3. Exact `WebMcpToolResult` — is `content[].type` `string` or a literal union?
-4. Whether `declareExperimentalWebMcpTool` returns `Promise<void>` and what it does on
-   duplicate names (throw vs. reject).
-5. `withExperimentalAutoCleanupInjectors` — its real signature and which package it lives
-   in (`@angular/router`?).
-6. Whether Angular passes `exposedTo` at all.
-
-Until these are checked, PLAN §2 is *inferred from docs*, and the parity suite (M3) is the
-only thing that can prove compatibility.
+- **M1 and M2 are done.** With the implementation in hand and no shims needed at a v20
+  floor, the core surface is implemented and building; emitted `.d.ts` signatures match
+  v22's.
+- **FR-2.1 (env-initializer shim) is unnecessary** at a v20 floor and can be dropped.
+- **FR-2.3 changes:** `provideExperimentalWebMcpForms` belongs to `@angular/forms/signals`,
+  so the core entry point must not export it at all — not even as a warning no-op.
+- **M6 got riskier:** `RouterFeatureKind` is a numeric enum whose v22 value for this
+  feature is `10`. Prefer the documented component-scoped pattern over a shim.
+- **M3 (parity suite) is still the release gate** — it now has a concrete target to diff
+  against, and the v22 tarball in the scratchpad is a ready-made fixture.

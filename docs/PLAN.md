@@ -88,61 +88,77 @@ the core** — it lives in an optional `/bridge` entry point (§6).
 
 ## 2. The exact API to reproduce
 
-Reverse-engineered from angular.dev API docs + commit
-[`3b0ae5f` *feat(core): add `provideWebMcpTools`*](https://github.com/angular/angular/commit/3b0ae5fef0328477ee0f5d51980217e7c583a606).
+> **Verified against `@angular/core@22.1.6`** (shipped `types/core.d.ts` +
+> `fesm2022/core.mjs`), not documentation. Full detail and the four corrections this
+> made to an earlier inferred version of this section are in `docs/M0-FINDINGS.md`.
 
-### 2.1 Types
+### 2.1 Types (`@angular/core`)
 
 ```ts
-// from @mcp-b/webmcp-types (Angular vendors this under third_party/)
-type JsonSchemaForInference = /* literal-inferable JSON Schema */;
+import type {JsonSchemaForInference, InferArgsFromInputSchema} from '@mcp-b/webmcp-types';
+// v22 vendors that same package under third_party/@mcp-b/webmcp-types.
 
-interface WebMcpToolDescriptor<InputSchema extends JsonSchemaForInference> {
-  /** The unique name of this tool. */
-  name: string;
-  /** A description of what the tool does and how the agent should consider using it. */
-  description: string;
-  /** A schema which describes the input arguments expected by the execute function. */
-  inputSchema: InputSchema;
-  /** The callback function which implements this tool. */
-  execute: WebMcpToolExecute<InputSchema>;
+/** exported as WebMcpClient */
+interface Client {
+  signal: AbortSignal;
 }
 
-type WebMcpToolExecute<InputSchema extends JsonSchemaForInference> =
-  (args: InferArgs<InputSchema>) =>
-    | WebMcpToolResult
-    | Promise<WebMcpToolResult>;
+/** exported as WebMcpToolExecute — note the second parameter and `unknown` return */
+type Execute<InputSchema extends JsonSchemaForInference> = (
+  args: InferArgsFromInputSchema<InputSchema>,
+  client: Client,
+) => unknown;
 
-type WebMcpToolResult = { content: Array<{ type: string; text: string }> };
+/** exported as WebMcpToolDescriptor — four members, no title/annotations/exposedTo */
+interface ToolDescriptor<InputSchema extends JsonSchemaForInference> {
+  name: string;
+  description: string;
+  inputSchema: InputSchema;
+  execute: Execute<InputSchema>;
+}
 ```
 
-### 2.2 Functions
+There is **no `WebMcpToolResult`**. A tool returns `unknown`; Angular serializes it, and
+the JSDoc notes the result "is typically just a raw `string`."
+
+### 2.2 Functions, and which package each lives in
 
 ```ts
-function declareExperimentalWebMcpTool<InputSchema extends JsonSchemaForInference>(
-  tool: WebMcpToolDescriptor<InputSchema>,
-  injector?: Injector,
-): Promise<void>;
+// @angular/core
+declare function declareExperimentalWebMcpTool<const InputSchema extends JsonSchemaForInference>(
+  tool: ToolDescriptor<InputSchema>, injector?: Injector): Promise<void>;
 
-function provideExperimentalWebMcpTools<const InputSchema extends JsonSchemaForInference>(
-  tools: WebMcpToolDescriptor<InputSchema>[],
-): EnvironmentProviders;
+declare function provideExperimentalWebMcpTools<const InputSchema extends JsonSchemaForInference>(
+  tools: ToolDescriptor<InputSchema>[]): EnvironmentProviders;
 
-function provideExperimentalWebMcpForms(): EnvironmentProviders;   // v22 Signal Forms only
+// @angular/forms/signals   — NOT core
+declare function provideExperimentalWebMcpForms(): EnvironmentProviders;
 
-// Router feature enabling destruction of route-level environment injectors
-function withExperimentalAutoCleanupInjectors(): RouterFeature<...>;
+// @angular/router          — NOT core
+declare function withExperimentalAutoCleanupInjectors(): ExperimentalAutoCleanupInjectorsFeature;
 ```
 
-### 2.3 Documented semantics we must match
+The core entry point must export only the first two; exporting the others would itself
+break parity.
 
-1. `execute` runs **inside the associated `Injector`'s injection context** — `inject()` works in the tool body.
-2. `provideExperimentalWebMcpTools` registers via `provideEnvironmentInitializer`; unregisters when that injector is destroyed.
-3. `declareExperimentalWebMcpTool` registers immediately, unregisters when the injection context (or the passed `injector`) is destroyed.
-4. Route-level tools **leak across navigation** unless `withExperimentalAutoCleanupInjectors()` is on the router.
-5. **No implicit input validation.** `execute` must validate its own args.
-6. Duplicate tool names throw. A component declaring a tool must not render twice concurrently.
-7. Signal Forms: `form(model, { experimentalWebMcpTool: { name, description } })` infers the JSON schema from the model's *initial value*, derives `required` from validators, and wires validation + submit so the agent sees errors and can retry. Cannot infer from `null`/`undefined`/empty arrays. Async validators are **not** triggered.
+### 2.3 Semantics, confirmed from the implementation
+
+1. `execute` runs inside the owning `Injector`'s injection context — `inject()` works.
+2. Lifecycle is `DestroyRef.onDestroy → AbortController.abort() → registerTool({signal})`.
+   The spec has no `unregisterTool`; aborting *is* unregistration.
+3. The wrapper composes `AbortSignal.any([appTeardown, client.signal])`, so either the
+   injector being destroyed or the agent aborting cancels the call.
+4. Unsupported browser or SSR → **silent early `return`**. No warning, no throw.
+5. Resolution order is `document.modelContext ?? navigator.modelContext`.
+6. **No implicit input validation.** `execute` must validate its own args.
+7. Duplicate names surface as an **unhandled promise rejection**, not a synchronous throw
+   — `provideExperimentalWebMcpTools` does not await its registrations.
+8. Signal Forms: `form(model, {experimentalWebMcpTool: {name, description}})` infers the
+   schema from the model's *initial value*, derives `required` from validators, and wires
+   validation + submit so the agent can self-correct. No inference from
+   `null`/`undefined`/empty arrays; async validators are not triggered.
+9. Every primitive v22 uses exists in **Angular 20** — at this floor the backport needs
+   no shims.
 
 ### 2.4 Known upstream defect — replicate, don't fix
 
@@ -151,23 +167,17 @@ signature collapses heterogeneous schemas to a union, so a tool taking `number` 
 `number | { [x: string]: unknown }`.
 
 **Decision: reproduce the signature exactly, bug included.** A "fixed" signature that
-accepts code Angular's rejects is a migration trap. Mitigate with an *additive, optional*
+accepts code Angular rejects is a migration trap. Mitigate with an *additive, optional*
 identity helper in a separate entry point:
 
 ```ts
-// ng-webmcp-kit/strict  — opt-in, doesn't change the core signature
+// ng-webmcp-compat/strict — opt-in, doesn't change the core signature
 export const webMcpTool = <const S extends JsonSchemaForInference>(
   t: WebMcpToolDescriptor<S>,
 ) => t;
-
-provideExperimentalWebMcpTools([
-  webMcpTool({ /* per-tool inference preserved */ }),
-]);
 ```
 
-This is forward-compatible: if upstream fixes #70125, the helper degrades to a no-op.
-
----
+Forward-compatible: if upstream fixes #70125, the helper degrades to a no-op.
 
 ## 3. Requirements
 
@@ -330,19 +340,19 @@ ng-webmcp-kit/
 
 | # | Milestone | Contents | Exit criteria |
 |---|---|---|---|
-| M0 | **Fidelity spike** (3–5 d) | Read v22's real `.d.ts` from `node_modules/@angular/core`; confirm every signature in §2; run Chrome 150 + flag against raw `registerTool`; verify abort, collision, `toolchange` | A checked-in `api-snapshot.v22.md` that §2 is verified against, not guessed |
-| M1 | Lifecycle core | `ModelContextAdapter`, DestroyRef→Abort chain, `runInInjectionContext` execute, duplicate guard | Tool registers, executes, unregisters on injector destroy — in Chrome 150 |
-| M2 | Core API surface | `declareExperimentalWebMcpTool`, `provideExperimentalWebMcpTools`, type re-exports, env-initializer shim | `.d.ts` matches v22 snapshot; demo app runs |
-| M3 | **Parity suite** | Shared spec file; v22 fixture project; CI matrix 19/20/21/22 | Same spec green against both impls — **this is the release gate** |
+| ~~M0~~ | ✅ **Fidelity spike** | Read `@angular/core@22.1.6` `.d.ts` + `fesm2022`; corrected §2 in four places; located forms/router symbols | **Done** — `docs/M0-FINDINGS.md` |
+| ~~M1~~ | ✅ Lifecycle core | `model-context-adapter.ts`, DestroyRef→Abort chain, `AbortSignal.any` composition, `runInInjectionContext` execute | **Done** — untested in a real browser; see M3/M4 |
+| ~~M2~~ | ✅ Core API surface | `declareExperimentalWebMcpTool`, `provideExperimentalWebMcpTools`, types. No env-initializer shim needed at a v20 floor | **Done** — emitted `.d.ts` signatures match v22 |
+| M3 | **Parity suite** | Shared spec file; v22 fixture project; CI matrix 20/21/22; automated `.d.ts` diff against `@angular/core` | Same spec green against both impls — **this is the release gate** |
 | M4 | Unsupported / SSR / polyfill | Fallback chain, `afterNextRender`, optional polyfill peer | No errors in Firefox/Safari; SSR build clean |
 | M5 | v22 delegation + migrate schematic | `CoreDelegationGuard`, `ng generate :migrate` | Migrating the demo app to v22 = run one command, zero source edits |
-| M6 | `withExperimentalAutoCleanupInjectors` shim | Router-events injector cleanup, or documented component-scoped alternative | Route tools gone after navigation, proven by e2e |
+| M6 | `withExperimentalAutoCleanupInjectors` shim | Router-events injector cleanup, or documented component-scoped alternative. **Riskier than first assessed**: `RouterFeatureKind` is a numeric enum, v22 uses `10` | Route tools gone after navigation, proven by e2e |
 | M7 | `/testing` + `/devtools` | harness, matchers, inspector | Tools testable without a real browser agent |
 | M8 | `/bridge` (JSON-RPC) | postMessage transport, origin allowlist, MCP-B wire compat | A registered tool callable from Claude Desktop via local relay |
-| M9 | `/strict`, `/forms-compat`, `ng add` | opt-in extras | — |
+| M9 | `/strict`, `ng add` | opt-in extras. `provideExperimentalWebMcpForms` lives in `@angular/forms/signals`, so core must not export it | — |
 | M10 | 1.0 | docs, version matrix, spec-drift + upstream-tracking policy | npm publish |
 
-M0–M3 is the shippable `0.1.0`. **M3 is non-negotiable** — without the parity suite you
+M0–M2 are complete; **M3 is what makes `0.1.0` shippable, and is non-negotiable** — without the parity suite you
 have no evidence the backport is actually compatible, which is the entire product claim.
 M8 is the only place your JSON-RPC idea belongs, and it can wait.
 

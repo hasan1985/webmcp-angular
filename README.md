@@ -34,9 +34,11 @@ Additive ideas live in separate, clearly-marked entry points that you opt into k
 
 ## Status
 
-Scaffold + verified types and runtime adapter. The two public runtime functions are **not yet implemented** — see `docs/PLAN.md` §6 for milestones and `docs/M0-FINDINGS.md` §5 for what still needs verifying against a real Angular 22 `.d.ts`.
+`declareExperimentalWebMcpTool` and `provideExperimentalWebMcpTools` are **implemented**, verified line-by-line against `@angular/core@22.1.6`'s shipped `fesm2022` build, and the emitted `.d.ts` signatures match v22's. Not yet exercised in a real browser.
 
-The release gate is **M3, the parity suite**: one spec file run against both this implementation and a v22 fixture app using `@angular/core`, across an Angular 20/21/22 CI matrix. Without it there is no evidence backing the compatibility claim, which is the entire product.
+Not yet done: the parity suite (M3), SSR/polyfill hardening (M4), the migration schematic (M5), router cleanup (M6), and every optional entry point. See `docs/PLAN.md` §6 and `docs/M0-FINDINGS.md`.
+
+The release gate is **M3, the parity suite**: one spec file run against both this implementation and a v22 fixture app using `@angular/core`, across an Angular 20/21/22 CI matrix, plus an automated `.d.ts` diff. Without it there is no evidence backing the compatibility claim, which is the entire product.
 
 ## Layout
 

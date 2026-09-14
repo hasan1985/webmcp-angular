@@ -1,43 +1,57 @@
 import type {InferArgsFromInputSchema, JsonSchemaForInference} from '@mcp-b/webmcp-types';
 
 // Re-exported so consumers constrain their schemas exactly as Angular v22 does.
-// Angular vendors this same type under `third_party/@mcp-b/webmcp-types`.
+// Angular vendors this same package under `third_party/@mcp-b/webmcp-types`.
 export type {JsonSchemaForInference};
 
 /**
- * The result an agent receives back from a tool.
+ * The client context of a given WebMCP tool execution.
  *
- * MIRRORS: `@angular/core` v22 `WebMcpToolResult`.
+ * MIRRORS: `@angular/core` v22 `WebMcpClient` (internally `Client`).
  */
-export interface WebMcpToolResult {
-  content: Array<{type: string; text: string}>;
+export interface WebMcpClient {
+  /**
+   * A signal which notifies the tool when the operation is aborted. When triggered, the
+   * current operation should be canceled and all allocated resources should be cleaned up.
+   */
+  signal: AbortSignal;
 }
 
 /**
- * The callback which implements a tool. Invoked inside the injection context of
- * the owning `Injector`, so `inject()` is usable in the body.
+ * The execute function of a WebMCP tool. Takes in arguments matching the associated
+ * `inputSchema` and returns content for the agent. The returned result is typically a
+ * `string`.
  *
- * MIRRORS: `@angular/core` v22 `WebMcpToolExecute`.
+ * MIRRORS: `@angular/core` v22 `WebMcpToolExecute` (internally `Execute`).
+ *
+ * Note the return type is `unknown`, not a structured `{content: [...]}` envelope —
+ * Angular serializes whatever you return. See `docs/M0-FINDINGS.md` §1.1.
  */
 export type WebMcpToolExecute<InputSchema extends JsonSchemaForInference> = (
   args: InferArgsFromInputSchema<InputSchema>,
-) => WebMcpToolResult | Promise<WebMcpToolResult>;
+  client: WebMcpClient,
+) => unknown;
 
 /**
- * Describes a tool exposed to AI agents.
+ * Describes and implements a specific WebMCP tool for an agent to invoke.
  *
- * MIRRORS: `@angular/core` v22 `WebMcpToolDescriptor`.
+ * MIRRORS: `@angular/core` v22 `WebMcpToolDescriptor` (internally `ToolDescriptor`).
  *
- * Deliberately NOT `ToolDescriptor` from `@mcp-b/webmcp-types` — that one is
- * generic over the *args*, this is generic over the *schema*. See
- * `docs/M0-FINDINGS.md` §1.2.
+ * Deliberately NOT `ToolDescriptor` from `@mcp-b/webmcp-types` — that one is generic
+ * over the *args*, this is generic over the *schema*. See `docs/M0-FINDINGS.md` §2.2.
+ *
+ * There is no `title` and no `annotations` here: Angular exposes neither, so neither
+ * does this package.
  */
 export interface WebMcpToolDescriptor<InputSchema extends JsonSchemaForInference> {
   /** The unique name of this tool. */
   name: string;
-  /** What the tool does and how the agent should consider using it. */
+  /** A description of what the tool does and how the agent should consider using it. */
   description: string;
-  /** Schema of the input arguments the agent must provide to `execute`. */
+  /**
+   * A schema which describes the input arguments expected by the `execute` function
+   * which the agent must provide.
+   */
   inputSchema: InputSchema;
   /** The callback function which implements this tool. */
   execute: WebMcpToolExecute<InputSchema>;
