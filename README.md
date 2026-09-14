@@ -37,7 +37,7 @@ Additive ideas live in separate, clearly-marked entry points that you opt into k
 | `/strict` | ❌ remove on migrate | `webMcpTool()` identity helper mitigating angular#70125 |
 | `/polyfill` | ❌ remove on migrate | `installWebMcpPolyfill()` — installs `document.modelContext` where the browser has none |
 | `/bridge` | ❌ no v22 equivalent | `createWebMcpBridge()` — MCP over JSON-RPC 2.0, so tools reach Claude Desktop / Cursor via an extension or the MCP-B relay |
-| `/devtools` | ❌ dev only | inspector: list tools, view schemas, invoke manually |
+| `/devtools` | ❌ dev only | `mountWebMcpDevtools()` — floating inspector: live tool list, schemas, invoke by hand |
 | `/testing` | ❌ test only | `installWebMcpTestHarness()` — assert on what your app exposes, with no browser |
 
 `/bridge` is the one genuinely additive capability Angular has no plan for, and the only reason this package might outlive the migration.
@@ -94,7 +94,25 @@ compatible with `@mcp-b/transports`, so an extension or the local relay can reac
 tools. **This is the one capability with no Angular 22 equivalent**, and the reason
 this package might outlive the migration.
 
-Not yet done: the `/devtools` inspector. See `docs/PLAN.md` §6.
+And there is an inspector for development:
+
+```ts
+import {isDevMode} from '@angular/core';
+
+if (isDevMode()) {
+  const {mountWebMcpDevtools} = await import('ng-webmcp-compat/devtools');
+  mountWebMcpDevtools();     // Ctrl/Cmd + Shift + M
+}
+```
+
+Live tool list, schemas, arguments prefilled from the schema so running a tool is one
+click, and a call log. It mounts in a shadow root so it cannot restyle — or be
+restyled by — the app it is inspecting. The **dynamic** import keeps it out of your
+initial bundle: measured on a production build it lands in its own lazy chunk
+(~8.6 kB raw, ~3 kB transfer) that is emitted but never downloaded, because
+`isDevMode()` is false and the import never runs.
+
+Not yet done: `ng add`. See `docs/PLAN.md` §6.
 
 ## Layout
 

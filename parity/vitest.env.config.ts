@@ -20,6 +20,7 @@ export default defineConfig({
       'specs/polyfill.spec.ts',
       'specs/testing-harness.spec.ts',
       'specs/bridge.spec.ts',
+      'specs/devtools.spec.ts',
     ],
   },
 });
