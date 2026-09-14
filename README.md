@@ -25,7 +25,8 @@ Additive ideas live in separate, clearly-marked entry points that you opt into k
 | Entry point | Migrates to v22? | Contents |
 |---|---|---|
 | `ng-webmcp-compat` | ✅ identical surface | `declareExperimentalWebMcpTool`, `provideExperimentalWebMcpTools`, types |
-| `/strict` | ❌ remove on migrate | `webMcpTool()` identity helper working around angular#70125 |
+| `/strict` | ❌ remove on migrate | `webMcpTool()` identity helper mitigating angular#70125 |
+| `/polyfill` | ❌ remove on migrate | `installWebMcpPolyfill()` — installs `document.modelContext` where the browser has none |
 | `/bridge` | ❌ no v22 equivalent | JSON-RPC over `postMessage`; routes tools to Claude Desktop / Cursor via the MCP-B relay |
 | `/devtools` | ❌ dev only | inspector: list tools, view schemas, invoke manually |
 | `/testing` | ❌ test only | polyfill harness, matchers, fake agent invoker |
@@ -42,13 +43,21 @@ Additive ideas live in separate, clearly-marked entry points that you opt into k
 ✔ 24/24  ours + @angular/core @ Angular 22
 ```
 
-Not yet done: real-browser verification, SSR/polyfill hardening (M4), the migration schematic (M5), router cleanup (M6), and every optional entry point. See `docs/PLAN.md` §6.
+Verified in a real browser via the sibling [`ng-webmcp-playground`](../ng-webmcp-playground):
+tools register, execute, and unregister on navigation. Hardened for server rendering and
+for browsers with no WebMCP at all — `npm run check:packaging` packs the library, installs
+the **tarball** into a real Angular SSR app and prerenders it.
+
+Not yet done: the migration schematic (M5), router cleanup (M6), and the `/bridge`,
+`/devtools` and `/testing` entry points. See `docs/PLAN.md` §6.
 
 ## Layout
 
 ```
 projects/ng-webmcp-compat/   the library (5 entry points)
 parity/                      the M3 release gate — spec suite + .d.ts diff
+fixtures/ssr-consumer/       real Angular SSR app, prerendered against the tarball
+scripts/check-packaging.mjs  packs, installs the tarball, prerenders, asserts
 docs/PLAN.md                 requirements, architecture, milestones, risks
 docs/M0-FINDINGS.md          verified findings + corrections to the plan
 ```
@@ -58,7 +67,9 @@ docs/M0-FINDINGS.md          verified findings + corrections to the plan
 ```bash
 npm install
 npx ng build ng-webmcp-compat     # builds all 5 entry points to dist/
-npm run verify                    # parity gate: .d.ts diff + spec suite on Angular 20/21/22
+npm run verify                    # everything: .d.ts diff, spec suite on Angular 20/21/22,
+                                  # SSR + unsupported-browser specs, tarball/prerender check
+npm run check:packaging           # just the tarball install + SSR prerender
 # the showcase app is a sibling repo: ../ng-webmcp-playground
 ```
 

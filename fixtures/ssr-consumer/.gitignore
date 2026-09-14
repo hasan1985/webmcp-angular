@@ -41,12 +41,3 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
-
-# Parity fixture project installs its own Angular versions
-parity/node_modules
-
-# Packaging fixture: installs its own deps and build output
-fixtures/*/node_modules
-fixtures/*/dist
-fixtures/*/.angular
-/ng-webmcp-compat-*.tgz

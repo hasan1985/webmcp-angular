@@ -28,6 +28,21 @@ jobs:
       - run: npm ci --prefix parity
       - run: npm --prefix parity run test:v${{ matrix.angular }}
 
+  environment:
+    name: SSR + unsupported-browser + polyfill
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm ci --prefix parity
+      # These specs import the built artifact, not source.
+      - run: npm run build:lib
+      - run: npm --prefix parity run test:ssr
+      - run: npm --prefix parity run test:env
+
   types:
     name: .d.ts diff vs @angular/core
     runs-on: ubuntu-latest
@@ -39,3 +54,16 @@ jobs:
       - run: npm ci
       - run: npm ci --prefix parity
       - run: npm run test:api-diff
+
+  packaging:
+    name: tarball install + SSR prerender
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      # Packs the library, installs the TARBALL into a real Angular SSR app, and
+      # prerenders it. The only check that consumes the package as a user does.
+      - run: npm run check:packaging

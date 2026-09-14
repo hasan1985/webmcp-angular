@@ -325,3 +325,49 @@ Chrome, polyfill-backed (`@mcp-b/webmcp-polyfill` 5.1.0):
   `DestroyRef → AbortController → registerTool({signal})` unregisters correctly
   outside jsdom.
 - Tools and UI share state: a move made via `executeTool` renders on the board.
+
+### 6.4 `cleanupWebMCPPolyfill()` does not uninstall the accessor
+
+`@mcp-b/webmcp-polyfill` 5.1.0 installs `modelContext` on **`Document.prototype`**,
+not as an own property of `document`. Two consequences:
+
+- `delete document.modelContext` does not remove it.
+- `cleanupWebMCPPolyfill()` does not remove it either — after cleanup,
+  `document.modelContext` is still truthy.
+
+So there is no supported way to return a page to a pristine "no WebMCP" state. Test
+teardown has to delete from `Document.prototype` directly
+(`parity/specs/polyfill.spec.ts` does), or every test after the first observes a
+"native" implementation and silently tests the wrong thing.
+
+This also explains a correct-but-surprising result: calling `installWebMcpPolyfill()`
+twice returns `'polyfill'` then `'native'`. Once anything implements the API, the
+helper's job is to leave it alone, whoever installed it.
+
+### 6.5 What M4 now covers, and what it still does not
+
+Covered — against the **built artifact**, not source:
+
+| Environment | Spec | Result |
+|---|---|---|
+| No `document` (server render) | `parity/specs/ssr.spec.ts` | 7 tests: silent, registers nothing, no unhandled rejection |
+| `document` but no `modelContext` (Firefox/Safari) | `parity/specs/unsupported.spec.ts` | silent no-op, `execute` never runs |
+| Only `navigator.modelContext` (Chrome 149) | same | resolves via the deprecated surface |
+| `inputSchema` as a JSON string (Chrome 149–153) | same | FR-3.5's string arm, finally reachable |
+| Polyfill-backed | `parity/specs/polyfill.spec.ts` | registers, unregisters, never replaces native |
+| Real Angular SSR app, prerendered | `scripts/check-packaging.mjs` | build succeeds, markup reports `webmcp-supported: false` |
+
+The packaging check was regression-tested by deleting the `typeof document` guard
+from the adapter: the prerender fails, as intended.
+
+Still not covered:
+
+- **Firefox and Safari themselves.** The unsupported path is proven in jsdom with
+  `modelContext` removed, which is the same code path, but no real non-Chromium
+  browser has run this.
+- **Native Chrome WebMCP.** Everything browser-side so far has been polyfill-backed.
+  Chrome with `--enable-features=WebMCP` would exercise the real implementation,
+  including whether `inputSchema` arrives as a string on that build.
+- **Hydration ordering.** The fixture prerenders and reports unsupported server-side,
+  but nothing yet asserts that tools *do* register on the client after hydration —
+  the quieter and more damaging failure.

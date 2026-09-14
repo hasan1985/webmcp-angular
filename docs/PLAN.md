@@ -326,6 +326,7 @@ ng-webmcp-kit/
   projects/kit/
     src/                    core — v22-identical surface only   → ng-webmcp-kit
     src/strict/             webMcpTool() inference helper       → /strict
+    src/polyfill/           installWebMcpPolyfill()             → /polyfill
     src/bridge/             JSON-RPC / postMessage transport    → /bridge
     src/devtools/           inspector (dev only)                → /devtools
     src/testing/            harness + matchers                  → /testing
@@ -345,16 +346,17 @@ ng-webmcp-kit/
 | ~~M1~~ | ✅ Lifecycle core | `model-context-adapter.ts`, DestroyRef→Abort chain, `AbortSignal.any` composition, `runInInjectionContext` execute | **Done** — untested in a real browser; see M3/M4 |
 | ~~M2~~ | ✅ Core API surface | `declareExperimentalWebMcpTool`, `provideExperimentalWebMcpTools`, types. No env-initializer shim needed at a v20 floor | **Done** — emitted `.d.ts` signatures match v22 |
 | ~~M3~~ | ✅ **Parity suite** | `parity/` — shared spec + fake ModelContext, run against ours on 20/21/22 and against `@angular/core` on 22; `.d.ts` diff script; GitHub Actions matrix + weekly drift cron | **Done** — 12/12 on v20 and v21, 24/24 on v22; all 5 declarations match |
-| M4 | Unsupported / SSR / polyfill | Fallback chain, `afterNextRender`, optional polyfill peer | No errors in Firefox/Safari; SSR build clean |
-| M5 | v22 delegation + migrate schematic + **packaging check** | `CoreDelegationGuard`, `ng generate :migrate`, CI step that `npm pack`s the library, installs the tarball into a throwaway app and builds it | Migration = one command, zero source edits; built package proven installable |
+| ~~M4~~ | ✅ Unsupported / SSR / polyfill | `/polyfill` entry point (`installWebMcpPolyfill`); SSR + unsupported-browser + cross-generation specs against the **built artifact**; real Angular SSR fixture prerendered via `scripts/check-packaging.mjs` | **Done** — 7 SSR, 15 env/polyfill tests; prerender emits `webmcp-supported: false`; regression-tested by removing the guard |
+| M5 | v22 delegation + migrate schematic | `CoreDelegationGuard`, `ng generate :migrate`. *(The packaging check landed early with M4 — `scripts/check-packaging.mjs`.)* | Migration = one command, zero source edits |
 | M6 | `withExperimentalAutoCleanupInjectors` shim | Router-events injector cleanup, or documented component-scoped alternative. **Riskier than first assessed**: `RouterFeatureKind` is a numeric enum, v22 uses `10` | Route tools gone after navigation, proven by e2e |
 | M7 | `/testing` + `/devtools` | harness, matchers, inspector | Tools testable without a real browser agent |
 | M8 | `/bridge` (JSON-RPC) | postMessage transport, origin allowlist, MCP-B wire compat | A registered tool callable from Claude Desktop via local relay |
 | M9 | `/strict`, `ng add` | opt-in extras. `provideExperimentalWebMcpForms` lives in `@angular/forms/signals`, so core must not export it | — |
 | M10 | 1.0 | docs, version matrix, spec-drift + upstream-tracking policy | npm publish |
 
-M0–M3 are complete, so `0.1.0` now has evidence behind its compatibility claim. M4 (SSR/polyfill
-hardening) and a real-browser test are what stand between here and publishing.
+M0–M4 are complete, and the core has been exercised in a real browser (see
+`../ng-webmcp-playground`). What stands between here and `0.1.0` is M5's migration
+schematic and a decision on M6.
 M8 is the only place your JSON-RPC idea belongs, and it can wait.
 
 ---
