@@ -268,3 +268,60 @@ document.modelContext → navigator.modelContext → polyfill → no-op
   feature is `10`. Prefer the documented component-scoped pattern over a shim.
 - **M3 (parity suite) is still the release gate** — it now has a concrete target to diff
   against, and the v22 tarball in the scratchpad is a ready-made fixture.
+
+---
+
+## 6. Findings from consuming the built package (playground, Chrome)
+
+From building `../ng-webmcp-playground` against the packed tarball and running it in
+a real browser. These are exactly the class of defect the parity suite cannot reach,
+since parity imports workspace source.
+
+### 6.1 A `file:` install breaks secondary entry points — PACKAGING BUG
+
+`npm i file:../ng-webmcp-compat/dist/ng-webmcp-compat` creates a **symlink**.
+TypeScript resolves symlinks to their real path (`preserveSymlinks: false` by
+default), so from `dist/ng-webmcp-compat/strict/` the import in `strict/index.d.ts`:
+
+```ts
+import { JsonSchemaForInference, WebMcpToolDescriptor } from 'ng-webmcp-compat';
+```
+
+cannot find the package — walking up from the real path never reaches a
+`node_modules` containing it. With `skipLibCheck` on (the Angular CLI default) the
+resolution failure is silent: the types degrade to `any`, and consumers get
+
+```
+TS7031: Binding element 'square' implicitly has an 'any' type.
+```
+
+on their tool arguments, with nothing pointing at the real cause.
+
+Installing a **packed tarball** works, because npm unpacks it into a real directory.
+
+**Action:** the M5 packaging check must install a tarball, and should additionally
+assert that a consumer using a secondary entry point type-checks. Consider whether
+secondary entry points should import from a relative path rather than the package
+name — `ng-packagr`'s default is the package name, so this may be worth an upstream
+question rather than a local workaround.
+
+### 6.2 `webMcpTool()` does not fix the provider call — doc correction
+
+`/strict`'s helper fixes *authoring* inference inside one descriptor. It does **not**
+fix `provideExperimentalWebMcpTools`, which has a single type parameter for the whole
+array: heterogeneous schemas have no valid `S`, and the call fails to compile with or
+without the helper. The cast-free fix is one provider call per tool, keeping each
+array homogeneous. The doc comment has been corrected — it previously overstated this.
+
+### 6.3 Real-browser confirmation
+
+Chrome, polyfill-backed (`@mcp-b/webmcp-polyfill` 5.1.0):
+
+- `document.modelContext` present; `executeTool` present (a Chromium extension the
+  polyfill also implements, so the demo works without native support).
+- `getTools()` returned `inputSchema` as an **object**, not the Chrome 149–153 string
+  form. FR-3.5's string arm is therefore still untested against a real browser.
+- Tool count went 3 (`/game`) → 5 (`/notes`) → 3 (back), so
+  `DestroyRef → AbortController → registerTool({signal})` unregisters correctly
+  outside jsdom.
+- Tools and UI share state: a move made via `executeTool` renders on the board.
