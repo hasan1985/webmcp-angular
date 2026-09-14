@@ -1,0 +1,922 @@
+<title>Angular WebMCP Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+  :root {
+    --paper:   #f3f6f7;
+    --surface: #ffffff;
+    --sunk:    #eaeef1;
+    --ink:     #13171b;
+    --muted:   #58656e;
+    --rule:    #d7dfe4;
+
+    /* Semantic layer key — repeated in every diagram. */
+    --app:     #9c5f0a;
+    --ng:      #ad2a50;
+    --browser: #135f8c;
+    --agent:   #267054;
+    --warn:    #a3341f;
+
+    --serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    --sans:  "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono:  "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --measure: 68ch;
+    --wide: 980px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:   #12161a;
+      --surface: #1a2025;
+      --sunk:    #151b20;
+      --ink:     #e6edf1;
+      --muted:   #94a2ac;
+      --rule:    #2a343b;
+
+      --app:     #d99a3f;
+      --ng:      #e87f9c;
+      --browser: #6db4de;
+      --agent:   #6dc2a1;
+      --warn:    #e89478;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:   #12161a;
+    --surface: #1a2025;
+    --sunk:    #151b20;
+    --ink:     #e6edf1;
+    --muted:   #94a2ac;
+    --rule:    #2a343b;
+
+    --app:     #d99a3f;
+    --ng:      #e87f9c;
+    --browser: #6db4de;
+    --agent:   #6dc2a1;
+    --warn:    #e89478;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    max-width: var(--wide);
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 0 72px;
+  }
+
+  /* ── masthead ─────────────────────────────────────────── */
+  header.masthead {
+    border-bottom: 1px solid var(--rule);
+    padding-block: 56px 32px;
+    margin-bottom: 8px;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(2.1rem, 5.5vw, 3.1rem);
+    line-height: 1.1;
+    letter-spacing: -.015em;
+    margin: 0 0 18px;
+    text-wrap: balance;
+  }
+  .standfirst {
+    max-width: var(--measure);
+    font-size: 1.08rem;
+    color: var(--muted);
+    margin: 0;
+  }
+  .standfirst strong { color: var(--ink); font-weight: 600; }
+
+  /* ── layer key ────────────────────────────────────────── */
+  .key {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 22px;
+    margin-top: 28px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+  }
+  .key p {
+    margin: 0 0 2px;
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .key span {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: .86rem;
+    font-family: var(--mono);
+  }
+  .key i {
+    width: 11px; height: 11px;
+    border-radius: 2px;
+    display: inline-block;
+  }
+
+  /* ── sections ─────────────────────────────────────────── */
+  section { padding-block: 52px 8px; }
+  section + section { border-top: 1px solid var(--rule); }
+
+  .num {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: .1em;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 8px;
+  }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(1.45rem, 3.4vw, 1.95rem);
+    line-height: 1.2;
+    letter-spacing: -.01em;
+    margin: 0 0 20px;
+    max-width: var(--measure);
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 1rem;
+    margin: 34px 0 10px;
+    max-width: var(--measure);
+  }
+  p, ul, ol { max-width: var(--measure); }
+  p { margin: 0 0 16px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.15rem; }
+  li { margin-bottom: 7px; }
+  a { color: var(--browser); text-underline-offset: 2px; }
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--browser);
+    outline-offset: 2px;
+  }
+  strong { font-weight: 600; }
+  code {
+    font-family: var(--mono);
+    font-size: .875em;
+    background: var(--sunk);
+    padding: .12em .34em;
+    border-radius: 3px;
+  }
+
+  pre {
+    font-family: var(--mono);
+    font-size: .82rem;
+    line-height: 1.6;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 2px solid var(--ng);
+    border-radius: 3px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 0 0 18px;
+    max-width: var(--wide);
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  .c { color: var(--muted); }
+
+  /* ── figures ──────────────────────────────────────────── */
+  figure {
+    margin: 30px 0 34px;
+    max-width: var(--wide);
+  }
+  figure svg {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    color: var(--ink);
+  }
+  figcaption {
+    font-size: .85rem;
+    color: var(--muted);
+    margin-top: 12px;
+    max-width: var(--measure);
+    line-height: 1.55;
+  }
+  .scroller { overflow-x: auto; }
+
+  /* ── callouts ─────────────────────────────────────────── */
+  .note {
+    max-width: var(--measure);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 2px solid var(--warn);
+    border-radius: 3px;
+    padding: 14px 16px;
+    margin: 0 0 20px;
+    font-size: .93rem;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--warn);
+    display: block;
+    margin-bottom: 5px;
+  }
+  .note.measured { border-left-color: var(--agent); }
+  .note.measured .tag { color: var(--agent); }
+
+  /* ── tables ───────────────────────────────────────────── */
+  .tablewrap { overflow-x: auto; margin: 0 0 22px; max-width: var(--wide); }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: .89rem;
+    min-width: 520px;
+  }
+  th, td {
+    text-align: left;
+    padding: 9px 14px 9px 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  th {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  td.num-cell { font-variant-numeric: tabular-nums; }
+
+  /* ── pitfall list ─────────────────────────────────────── */
+  .pitfalls { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 3px; max-width: var(--wide); }
+  .pitfall { background: var(--surface); padding: 16px 18px; display: grid; grid-template-columns: 26px 1fr; gap: 0 14px; }
+  .pitfall .n { font-family: var(--mono); font-size: .8rem; color: var(--muted); padding-top: 2px; }
+  .pitfall h4 { margin: 0 0 5px; font-size: .95rem; font-weight: 600; }
+  .pitfall p { margin: 0; font-size: .88rem; color: var(--muted); max-width: 62ch; }
+  .pitfall p + p { margin-top: 7px; }
+  .pitfall .fix { color: var(--ink); }
+  .pitfall .fix b { font-family: var(--mono); font-size: .8rem; font-weight: 500; color: var(--agent); letter-spacing: .04em; text-transform: uppercase; }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    margin-top: 56px;
+    padding-top: 26px;
+    font-size: .87rem;
+    color: var(--muted);
+    max-width: var(--measure);
+  }
+
+  @media (max-width: 640px) {
+    section { padding-block: 40px 4px; }
+    .pitfall { grid-template-columns: 1fr; gap: 6px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="shell">
+
+<header class="masthead">
+  <p class="eyebrow">A short course · verified against @angular/core 22.1.6</p>
+  <h1>Angular WebMCP Architecture</h1>
+  <p class="standfirst">
+    WebMCP lets a page hand an AI agent <strong>typed, callable functions</strong> instead of
+    making it guess at your UI. Angular adds two things to that — a tool's
+    <strong>lifetime</strong> and its <strong>injection context</strong> — in about
+    25 lines. This is how the pieces fit, and where they bite.
+  </p>
+
+  <div class="key">
+    <p>Layer key, used in every diagram</p>
+    <span><i style="background: var(--app)"></i> your app</span>
+    <span><i style="background: var(--ng)"></i> Angular</span>
+    <span><i style="background: var(--browser)"></i> browser / spec</span>
+    <span><i style="background: var(--agent)"></i> the agent</span>
+  </div>
+</header>
+
+<!-- ───────────────────────── 1 ───────────────────────── -->
+<section>
+  <span class="num">01</span>
+  <h2>The shift: from guessing pixels to calling functions</h2>
+
+  <p>
+    Before WebMCP, an agent driving a web app had one option — pretend to be a person.
+    Screenshot the page, guess which pixels are a button, click, screenshot again.
+  </p>
+
+  <figure>
+    <div class="scroller">
+    <svg viewBox="0 0 900 250" role="img" aria-label="Left: an agent screenshots a page, guesses a click coordinate, and hopes. Right: an agent calls a named function with typed arguments, which runs a real service and returns a described result.">
+      <defs>
+        <marker id="a-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <polygon points="0,1 9,5 0,9" fill="currentColor"/>
+        </marker>
+        <marker id="a-agent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <polygon points="0,1 9,5 0,9" fill="var(--agent)"/>
+        </marker>
+      </defs>
+
+      <!-- divider -->
+      <line x1="450" y1="18" x2="450" y2="238" stroke="currentColor" stroke-width="1" opacity=".18" stroke-dasharray="3 4"/>
+
+      <!-- LEFT: without -->
+      <text x="16" y="24" font-family="IBM Plex Mono, monospace" font-size="11.5" letter-spacing="1" fill="currentColor" opacity=".55">WITHOUT WEBMCP</text>
+
+      <rect x="16" y="42" width="120" height="38" rx="3" fill="none" stroke="var(--agent)" stroke-width="1.5"/>
+      <text x="76" y="66" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12.5" fill="var(--agent)">agent</text>
+
+      <line x1="76" y1="80" x2="76" y2="112" stroke="currentColor" stroke-width="1.4" marker-end="url(#a-ink)"/>
+      <text x="88" y="100" font-family="IBM Plex Sans, sans-serif" font-size="11.5" fill="currentColor" opacity=".72">screenshot</text>
+
+      <rect x="16" y="112" width="120" height="38" rx="3" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".55"/>
+      <text x="76" y="136" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12.5" fill="currentColor" opacity=".75">pixels</text>
+
+      <line x1="76" y1="150" x2="76" y2="182" stroke="currentColor" stroke-width="1.4" marker-end="url(#a-ink)"/>
+      <text x="88" y="170" font-family="IBM Plex Sans, sans-serif" font-size="11.5" fill="currentColor" opacity=".72">click (200, 340)</text>
+
+      <rect x="16" y="182" width="120" height="38" rx="3" fill="none" stroke="var(--browser)" stroke-width="1.5"/>
+      <text x="76" y="206" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12.5" fill="var(--browser)">page</text>
+
+      <text x="160" y="150" font-family="IBM Plex Serif, serif" font-size="15" fill="currentColor" opacity=".45">vision model,</text>
+      <text x="160" y="170" font-family="IBM Plex Serif, serif" font-size="15" fill="currentColor" opacity=".45">screenshots, hope</text>
+
+      <!-- RIGHT: with -->
+      <text x="482" y="24" font-family="IBM Plex Mono, monospace" font-size="11.5" letter-spacing="1" fill="currentColor" opacity=".55">WITH WEBMCP</text>
+
+      <rect x="482" y="42" width="140" height="38" rx="3" fill="none" stroke="var(--agent)" stroke-width="1.5"/>
+      <text x="552" y="66" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12.5" fill="var(--agent)">agent</text>
+
+      <line x1="552" y1="80" x2="552" y2="112" stroke="var(--agent)" stroke-width="1.6" marker-end="url(#a-agent)"/>
+      <text x="564" y="100" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="var(--agent)">add_to_cart({sku, qty})</text>
+
+      <rect x="482" y="112" width="140" height="38" rx="3" fill="none" stroke="var(--app)" stroke-width="1.5"/>
+      <text x="552" y="136" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12.5" fill="var(--app)">your function</text>
+
+      <line x1="552" y1="150" x2="552" y2="182" stroke="currentColor" stroke-width="1.4" marker-end="url(#a-ink)"/>
+      <text x="564" y="170" font-family="IBM Plex Sans, sans-serif" font-size="11.5" fill="currentColor" opacity=".72">calls</text>
+
+      <rect x="482" y="182" width="140" height="38" rx="3" fill="none" stroke="var(--app)" stroke-width="1.5"/>
+      <text x="552" y="206" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12.5" fill="var(--app)">CartService</text>
+
+      <text x="648" y="144" font-family="IBM Plex Serif, serif" font-size="15" fill="currentColor" opacity=".45">a real result,</text>
+      <text x="648" y="164" font-family="IBM Plex Serif, serif" font-size="15" fill="currentColor" opacity=".45">in words you wrote</text>
+    </svg>
+    </div>
+    <figcaption>
+      The right-hand path is not just more reliable — it is cheaper. No vision model, no
+      screenshots, and a failure comes back as a sentence you authored rather than a
+      misplaced click.
+    </figcaption>
+  </figure>
+
+  <p>The entire browser surface is three members on one object:</p>
+
+<pre><code>document.modelContext.registerTool(tool, {signal?, exposedTo?})  <span class="c">// Promise&lt;void&gt;</span>
+document.modelContext.getTools({fromOrigins?})                   <span class="c">// Promise&lt;RegisteredTool[]&gt;</span>
+document.modelContext.ontoolchange                               <span class="c">// event handler</span></code></pre>
+
+  <div class="note">
+    <span class="tag">Misconception</span>
+    <p>
+      <strong>WebMCP is not JSON-RPC.</strong> The W3C draft has no wire format at all —
+      it is a direct in-page JavaScript API, and the intended consumer is the browser's own
+      agent. JSON-RPC enters only when you want to reach an agent <em>outside</em> the
+      page, which is a separate, non-standard layer (§06).
+    </p>
+  </div>
+</section>
+
+<!-- ───────────────────────── 2 ───────────────────────── -->
+<section>
+  <span class="num">02</span>
+  <h2>Three layers, and what each one owes you</h2>
+
+  <figure>
+    <div class="scroller">
+    <svg viewBox="0 0 900 290" role="img" aria-label="Three stacked layers. Your app holds services that know nothing about WebMCP. Angular ties tool lifetime to an injector and runs execute in the injection context. The browser exposes registerTool, getTools and the toolchange event.">
+      <defs>
+        <marker id="a-dn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <polygon points="0,1 9,5 0,9" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <!-- your app -->
+      <rect x="16" y="16" width="868" height="76" rx="3" fill="none" stroke="var(--app)" stroke-width="1.5"/>
+      <text x="36" y="42" font-family="IBM Plex Mono, monospace" font-size="11.5" letter-spacing="1" fill="var(--app)">YOUR APP</text>
+      <text x="36" y="66" font-family="IBM Plex Sans, sans-serif" font-size="14" fill="currentColor">CartService · GameStore · the services your buttons already call</text>
+      <text x="36" y="84" font-family="IBM Plex Sans, sans-serif" font-size="12.5" fill="currentColor" opacity=".6">knows nothing about WebMCP — that is the point</text>
+
+      <line x1="450" y1="92" x2="450" y2="110" stroke="currentColor" stroke-width="1.3" marker-end="url(#a-dn)"/>
+
+      <!-- angular -->
+      <rect x="16" y="110" width="868" height="96" rx="3" fill="none" stroke="var(--ng)" stroke-width="1.5"/>
+      <text x="36" y="136" font-family="IBM Plex Mono, monospace" font-size="11.5" letter-spacing="1" fill="var(--ng)">ANGULAR</text>
+      <text x="36" y="160" font-family="IBM Plex Mono, monospace" font-size="13" fill="currentColor">provideExperimentalWebMcpTools() · declareExperimentalWebMcpTool()</text>
+
+      <circle cx="42" cy="180" r="2.5" fill="var(--ng)"/>
+      <text x="54" y="185" font-family="IBM Plex Sans, sans-serif" font-size="13" fill="currentColor">ties a tool's lifetime to an <tspan font-family="IBM Plex Mono, monospace" font-size="12">Injector</tspan></text>
+      <circle cx="472" cy="180" r="2.5" fill="var(--ng)"/>
+      <text x="484" y="185" font-family="IBM Plex Sans, sans-serif" font-size="13" fill="currentColor">runs <tspan font-family="IBM Plex Mono, monospace" font-size="12">execute</tspan> in the injection context</text>
+
+      <line x1="450" y1="206" x2="450" y2="224" stroke="currentColor" stroke-width="1.3" marker-end="url(#a-dn)"/>
+
+      <!-- browser -->
+      <rect x="16" y="224" width="868" height="52" rx="3" fill="none" stroke="var(--browser)" stroke-width="1.5"/>
+      <text x="36" y="248" font-family="IBM Plex Mono, monospace" font-size="11.5" letter-spacing="1" fill="var(--browser)">BROWSER</text>
+      <text x="150" y="248" font-family="IBM Plex Mono, monospace" font-size="13" fill="currentColor">document.modelContext.registerTool(…)</text>
+      <text x="150" y="266" font-family="IBM Plex Sans, sans-serif" font-size="12.5" fill="currentColor" opacity=".6">the W3C Community Group draft</text>
+    </svg>
+    </div>
+    <figcaption>
+      Angular contributes exactly two things. That turns out to be all the integration a
+      framework needs — the implementation is 25 lines.
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ───────────────────────── 3 ───────────────────────── -->
+<section>
+  <span class="num">03</span>
+  <h2>The lifecycle: there is no <code>unregisterTool</code></h2>
+
+  <p>
+    This is the idea everything else rests on. Look at the interface again — there is no
+    method to remove a tool. So how does one ever go away?
+  </p>
+
+  <p>
+    Through the <code>AbortSignal</code> you passed when registering it.
+    <strong>Aborting that signal <em>is</em> unregistration.</strong> That is the entire
+    removal mechanism — and it happens to be the exact shape of Angular's
+    <code>DestroyRef</code>.
+  </p>
+
+  <figure>
+    <div class="scroller">
+    <svg viewBox="0 0 900 200" role="img" aria-label="A three-step chain: DestroyRef.onDestroy fires when an injector is destroyed, which calls AbortController.abort, which the browser observes on the signal passed to registerTool and drops the tool.">
+      <defs>
+        <marker id="a-chain" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <polygon points="0,1 9,5 0,9" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <rect x="16" y="52" width="230" height="74" rx="3" fill="none" stroke="var(--ng)" stroke-width="1.5"/>
+      <text x="131" y="82" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13.5" fill="var(--ng)">DestroyRef</text>
+      <text x="131" y="104" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor" opacity=".7">.onDestroy()</text>
+
+      <line x1="246" y1="89" x2="326" y2="89" stroke="currentColor" stroke-width="1.5" marker-end="url(#a-chain)"/>
+
+      <rect x="326" y="52" width="230" height="74" rx="3" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".6"/>
+      <text x="441" y="82" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13.5" fill="currentColor">AbortController</text>
+      <text x="441" y="104" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor" opacity=".7">.abort()</text>
+
+      <line x1="556" y1="89" x2="636" y2="89" stroke="currentColor" stroke-width="1.5" marker-end="url(#a-chain)"/>
+
+      <rect x="636" y="52" width="248" height="74" rx="3" fill="none" stroke="var(--browser)" stroke-width="1.5"/>
+      <text x="760" y="82" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13.5" fill="var(--browser)">registerTool</text>
+      <text x="760" y="104" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor" opacity=".7">{ signal }</text>
+
+      <text x="131" y="34" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12" fill="currentColor" opacity=".6">Angular's idea of “gone”</text>
+      <text x="441" y="34" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12" fill="currentColor" opacity=".6">the adapter</text>
+      <text x="760" y="34" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12" fill="currentColor" opacity=".6">the spec's idea of “gone”</text>
+
+      <text x="450" y="166" text-anchor="middle" font-family="IBM Plex Serif, serif" font-size="16" fill="currentColor" opacity=".75">
+        When the injector dies, abort the controller; the browser drops the tool.
+      </text>
+    </svg>
+    </div>
+    <figcaption>
+      No registry, no bookkeeping, no cleanup service. The two lifetimes compose directly —
+      which is why the whole integration fits in 25 lines.
+    </figcaption>
+  </figure>
+
+  <p>
+    Everything else — providers, scopes, route behaviour — is a consequence of
+    <strong>which injector you attach to</strong>.
+  </p>
+
+  <h3>The two registration doors</h3>
+
+<pre><code><span class="c">// app.config.ts — lives as long as the root injector</span>
+providers: [ provideExperimentalWebMcpTools([getBoardTool]) ]
+
+<span class="c">// a component or service — lives as long as that instance</span>
+constructor() {
+  declareExperimentalWebMcpTool({ name: 'add_note', … });
+}</code></pre>
+
+  <div class="note">
+    <span class="tag">Silent failure</span>
+    <p>
+      <code>provideExperimentalWebMcpTools</code> does <strong>not await</strong> its
+      registrations. <code>registerTool</code> rejects with <code>InvalidStateError</code>
+      on a duplicate name, so a collision becomes an <strong>unhandled promise
+      rejection</strong> — bootstrap succeeds and the second tool is simply absent. If you
+      see a stray <code>InvalidStateError</code> and the app otherwise works, that is it.
+    </p>
+  </div>
+</section>
+
+<!-- ───────────────────────── 4 ───────────────────────── -->
+<section>
+  <span class="num">04</span>
+  <h2>Anatomy of a tool call</h2>
+
+  <figure>
+    <div class="scroller">
+    <svg viewBox="0 0 900 330" role="img" aria-label="A round trip: the agent calls a tool, the browser looks it up and parses arguments, Angular's wrapper composes abort signals and enters the injection context, your tool validates and calls a service, and the result is serialized back to the agent.">
+      <defs>
+        <marker id="a-flow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <polygon points="0,1 9,5 0,9" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <rect x="16" y="14" width="868" height="44" rx="3" fill="none" stroke="var(--agent)" stroke-width="1.5"/>
+      <text x="36" y="42" font-family="IBM Plex Mono, monospace" font-size="13" fill="var(--agent)">AGENT</text>
+      <text x="130" y="42" font-family="IBM Plex Sans, sans-serif" font-size="13.5" fill="currentColor">decides to call <tspan font-family="IBM Plex Mono, monospace" font-size="12.5">add_to_cart({sku: "A1", qty: 2})</tspan></text>
+
+      <line x1="80" y1="58" x2="80" y2="82" stroke="currentColor" stroke-width="1.4" marker-end="url(#a-flow)"/>
+
+      <rect x="16" y="82" width="868" height="44" rx="3" fill="none" stroke="var(--browser)" stroke-width="1.5"/>
+      <text x="36" y="110" font-family="IBM Plex Mono, monospace" font-size="13" fill="var(--browser)">BROWSER</text>
+      <text x="130" y="110" font-family="IBM Plex Sans, sans-serif" font-size="13.5" fill="currentColor">looks the tool up by name, JSON-parses the arguments</text>
+
+      <line x1="80" y1="126" x2="80" y2="150" stroke="currentColor" stroke-width="1.4" marker-end="url(#a-flow)"/>
+      <text x="92" y="144" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor" opacity=".65">execute(args, {signal})</text>
+
+      <rect x="16" y="150" width="868" height="66" rx="3" fill="none" stroke="var(--ng)" stroke-width="1.5"/>
+      <text x="36" y="176" font-family="IBM Plex Mono, monospace" font-size="13" fill="var(--ng)">ANGULAR</text>
+      <text x="130" y="176" font-family="IBM Plex Mono, monospace" font-size="12.5" fill="currentColor">AbortSignal.any([injectorTeardown, agentSignal])</text>
+      <text x="130" y="200" font-family="IBM Plex Mono, monospace" font-size="12.5" fill="currentColor">runInInjectionContext(injector, …)</text>
+      <text x="612" y="200" font-family="IBM Plex Sans, sans-serif" font-size="12" fill="currentColor" opacity=".6">← this is why inject() works</text>
+
+      <line x1="80" y1="216" x2="80" y2="240" stroke="currentColor" stroke-width="1.4" marker-end="url(#a-flow)"/>
+
+      <rect x="16" y="240" width="868" height="66" rx="3" fill="none" stroke="var(--app)" stroke-width="1.5"/>
+      <text x="36" y="266" font-family="IBM Plex Mono, monospace" font-size="13" fill="var(--app)">YOUR TOOL</text>
+      <text x="130" y="266" font-family="IBM Plex Mono, monospace" font-size="12.5" fill="currentColor">const cart = inject(CartService);</text>
+      <text x="130" y="290" font-family="IBM Plex Mono, monospace" font-size="12.5" fill="currentColor">return `Added ${qty} × ${sku}.`;</text>
+      <text x="612" y="290" font-family="IBM Plex Sans, sans-serif" font-size="12" fill="currentColor" opacity=".6">← serialized back to the agent</text>
+    </svg>
+    </div>
+    <figcaption>
+      Nothing in this path touches the DOM. The UI updates because your <em>service</em>
+      changed — the same service the buttons use.
+    </figcaption>
+  </figure>
+
+  <h3>Two details the docs once got wrong</h3>
+  <ul>
+    <li>
+      <strong><code>execute</code> takes a second parameter.</strong>
+      <code>client.signal</code> is an <code>AbortSignal</code> — pass it to any
+      <code>fetch</code> so a cancelled turn actually cancels the work.
+    </li>
+    <li>
+      <strong>It returns <code>unknown</code></strong>, not a
+      <code>{content: […]}</code> envelope. There is no <code>WebMcpToolResult</code> type
+      in Angular. Return a string; the browser serializes it.
+    </li>
+  </ul>
+
+  <div class="note">
+    <span class="tag">Nobody validates</span>
+    <p>
+      Not the spec, not the browser, not Angular. <code>inputSchema</code> is a hint to the
+      model, not a runtime guard — an agent can send <code>{square: 99}</code> for a field
+      you declared <code>maximum: 8</code>. So <strong>validate, and return the problem as
+      text</strong>. A thrown exception ends the turn; a described failure lets the agent
+      correct itself:
+    </p>
+<pre><code>agent → make_move({square: 4, player: "O"})
+      ← "Move rejected. Square 4 is already taken by X.
+         Empty squares are: 0, 1, 2, 3, 5, 6, 7, 8."
+agent → make_move({square: 5, player: "O"})    <span class="c">← it fixed itself</span></code></pre>
+    <p>Good error text is not politeness here. It is the control flow.</p>
+  </div>
+</section>
+
+<!-- ───────────────────────── 5 ───────────────────────── -->
+<section>
+  <span class="num">05</span>
+  <h2>Scope: the agent should see what applies here, now</h2>
+
+  <p>
+    It is tempting to register everything at the root. Two reasons not to. Every tool's
+    name, description and schema is sent to the model <em>on every turn</em> — fifty
+    always-on tools is a permanent token bill. And a model choosing between six relevant
+    tools does better than one choosing between fifty, most of which cannot apply.
+  </p>
+
+  <figure>
+    <div class="scroller">
+    <svg viewBox="0 0 900 260" role="img" aria-label="Comparison of scoping strategies across navigation. Component-declared tools appear on the notes route and disappear on leaving it. Route-level provider tools appear and then remain registered after navigating away, which is a leak on Angular 20 and 21.">
+      <defs>
+        <marker id="a-nav" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <polygon points="0,1 9,5 0,9" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <!-- column headers -->
+      <text x="120" y="24" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor" opacity=".6">/game</text>
+      <text x="450" y="24" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor" opacity=".6">/notes</text>
+      <text x="780" y="24" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor" opacity=".6">back to /game</text>
+
+      <line x1="215" y1="40" x2="350" y2="40" stroke="currentColor" stroke-width="1.2" marker-end="url(#a-nav)" opacity=".5"/>
+      <line x1="548" y1="40" x2="683" y2="40" stroke="currentColor" stroke-width="1.2" marker-end="url(#a-nav)" opacity=".5"/>
+
+      <!-- row 1: component scope -->
+      <text x="16" y="72" font-family="IBM Plex Mono, monospace" font-size="11" letter-spacing=".8" fill="var(--agent)">COMPONENT CONSTRUCTOR</text>
+
+      <rect x="16" y="84" width="208" height="60" rx="3" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".45"/>
+      <text x="30" y="104" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor">get_board · make_move</text>
+      <text x="30" y="122" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor">reset_game</text>
+      <text x="30" y="138" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="currentColor" opacity=".55">3 tools</text>
+
+      <rect x="346" y="84" width="208" height="60" rx="3" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".45"/>
+      <text x="360" y="104" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor">get_board · make_move</text>
+      <text x="360" y="122" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="var(--agent)">reset_game · add_note · list_notes</text>
+      <text x="360" y="138" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="var(--agent)" opacity=".85">5 tools</text>
+
+      <rect x="676" y="84" width="208" height="60" rx="3" fill="none" stroke="var(--agent)" stroke-width="1.5"/>
+      <text x="690" y="104" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor">get_board · make_move</text>
+      <text x="690" y="122" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor">reset_game</text>
+      <text x="690" y="138" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="var(--agent)">3 tools — cleaned up ✓</text>
+
+      <!-- row 2: route providers -->
+      <text x="16" y="186" font-family="IBM Plex Mono, monospace" font-size="11" letter-spacing=".8" fill="var(--warn)">ROUTE-LEVEL PROVIDERS · Angular 20 / 21</text>
+
+      <rect x="16" y="198" width="208" height="46" rx="3" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".45"/>
+      <text x="30" y="220" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor">3 tools</text>
+
+      <rect x="346" y="198" width="208" height="46" rx="3" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".45"/>
+      <text x="360" y="220" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor">+ probe_leak</text>
+
+      <rect x="676" y="198" width="208" height="46" rx="3" fill="none" stroke="var(--warn)" stroke-width="1.5"/>
+      <text x="690" y="220" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="var(--warn)">probe_leak STILL THERE</text>
+    </svg>
+    </div>
+    <figcaption>
+      Measured in Chrome on Angular 20.3.31. The route's environment injector is not
+      destroyed on navigation before Angular 22, so a tool registered in
+      <code>Route.providers</code> outlives its route.
+    </figcaption>
+  </figure>
+
+  <div class="note measured">
+    <span class="tag">What to do</span>
+    <p>
+      Declare page-scoped tools <strong>in the routed component</strong>. The router already
+      creates and destroys that component, so its lifetime <em>is</em> the route's lifetime —
+      on every version. On Angular 22 you may instead use
+      <code>provideRouter(routes, withExperimentalAutoCleanupInjectors())</code>, which
+      cannot be backported because its <code>RouterFeatureKind</code> is a v22 enum value.
+    </p>
+  </div>
+
+  <p>
+    The general move: <strong>find the thing whose lifetime you actually mean, and attach
+    there.</strong> A tool that should exist only while a dialog is open belongs in the
+    dialog's constructor. If nothing has the lifetime you want, create an injector that does.
+  </p>
+</section>
+
+<!-- ───────────────────────── 6 ───────────────────────── -->
+<section>
+  <span class="num">06</span>
+  <h2>Getting tools out of the page</h2>
+
+  <p>
+    Every diagram so far has put the agent <em>inside</em> the browser — which is what the
+    W3C draft is designed for. But most agents people actually use live outside it.
+  </p>
+
+  <figure>
+    <div class="scroller">
+    <svg viewBox="0 0 900 300" role="img" aria-label="Three audiences for a page's tools: the browser's built-in agent reads document.modelContext directly using only standard API; in-page code such as a chat or inspector needs the non-standard executeTool; and an external MCP client reaches the tools through a JSON-RPC bridge over postMessage via an extension or relay.">
+      <defs>
+        <marker id="a-t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <polygon points="0,1 9,5 0,9" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <!-- page boundary -->
+      <rect x="16" y="14" width="868" height="128" rx="3" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".35" stroke-dasharray="4 4"/>
+      <text x="34" y="36" font-family="IBM Plex Mono, monospace" font-size="11" letter-spacing="1" fill="currentColor" opacity=".5">YOUR PAGE</text>
+
+      <rect x="330" y="48" width="240" height="40" rx="3" fill="none" stroke="var(--browser)" stroke-width="1.5"/>
+      <text x="450" y="73" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13" fill="var(--browser)">document.modelContext</text>
+
+      <!-- three consumers -->
+      <line x1="150" y1="122" x2="150" y2="94" stroke="currentColor" stroke-width="1.3" marker-end="url(#a-t)"/>
+      <line x1="150" y1="94" x2="330" y2="72" stroke="currentColor" stroke-width="1.3" opacity=".45"/>
+      <line x1="450" y1="122" x2="450" y2="94" stroke="currentColor" stroke-width="1.3" marker-end="url(#a-t)"/>
+      <line x1="750" y1="122" x2="750" y2="94" stroke="currentColor" stroke-width="1.3" marker-end="url(#a-t)"/>
+      <line x1="750" y1="94" x2="570" y2="72" stroke="currentColor" stroke-width="1.3" opacity=".45"/>
+
+      <text x="150" y="162" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" fill="var(--agent)">browser's built-in agent</text>
+      <text x="150" y="182" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="currentColor" opacity=".6">standard · nothing to do</text>
+
+      <text x="450" y="162" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" fill="var(--app)">in-page chat or inspector</text>
+      <text x="450" y="182" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="currentColor" opacity=".6">needs executeTool — not standard</text>
+
+      <text x="750" y="162" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" fill="var(--ng)">the bridge</text>
+      <text x="750" y="182" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="currentColor" opacity=".6">JSON-RPC over postMessage</text>
+
+      <line x1="750" y1="196" x2="750" y2="222" stroke="currentColor" stroke-width="1.3" marker-end="url(#a-t)"/>
+      <rect x="640" y="222" width="220" height="34" rx="3" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".55"/>
+      <text x="750" y="244" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">extension / local relay</text>
+
+      <line x1="750" y1="256" x2="750" y2="276" stroke="currentColor" stroke-width="1.3" marker-end="url(#a-t)"/>
+      <rect x="640" y="276" width="220" height="16" rx="3" fill="none" stroke="var(--agent)" stroke-width="1.4"/>
+      <text x="750" y="289" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--agent)">Claude Desktop · Cursor</text>
+    </svg>
+    </div>
+    <figcaption>
+      Three audiences, three requirements. The bridge reads whatever
+      <code>document.modelContext</code> is present — native or polyfilled — and does not
+      care which.
+    </figcaption>
+  </figure>
+
+  <h3>The polyfill must win the race</h3>
+
+  <p>
+    Native WebMCP is Chrome-only and flagged, so in practice you develop against a polyfill.
+    It has to finish <em>before</em> tools register — which rules out doing it in a provider,
+    because <code>provideExperimentalWebMcpTools</code> registers from an environment
+    initializer during bootstrap:
+  </p>
+
+<pre><code>installWebMcpPolyfill()
+  .then(() =&gt; bootstrapApplication(App, appConfig))
+  .catch(err =&gt; console.error(err));
+
+<span class="c">// a .then chain, not top-level await — Angular's default browserslist</span>
+<span class="c">// targets reject it and the build fails outright</span></code></pre>
+
+  <h3>A convention worth copying from MCP</h3>
+
+  <p>
+    Over the bridge, a tool that <em>fails</em> returns a <strong>successful</strong> response
+    with <code>isError: true</code> — not a JSON-RPC error. Same reasoning as §04: the model
+    is meant to read the failure and adapt. Protocol errors are reserved for protocol
+    problems: unknown method, malformed request, no such tool.
+  </p>
+</section>
+
+<!-- ───────────────────────── 7 ───────────────────────── -->
+<section>
+  <span class="num">07</span>
+  <h2>What bites you</h2>
+
+  <p>
+    Nine things measured the hard way. None of them announce themselves — the failure mode
+    for most is <em>silence</em>.
+  </p>
+
+  <div class="pitfalls">
+    <div class="pitfall">
+      <span class="n">01</span>
+      <div>
+        <h4>Nothing validates the agent's arguments</h4>
+        <p>A tool receives <code>{square: 99}</code> for a field declared <code>maximum: 8</code>.</p>
+        <p class="fix"><b>Fix</b> Validate in <code>execute</code>; return the problem as text.</p>
+      </div>
+    </div>
+    <div class="pitfall">
+      <span class="n">02</span>
+      <div>
+        <h4>Duplicate names are an unhandled rejection, not a throw</h4>
+        <p>A stray <code>InvalidStateError</code>, the app works, one tool is missing.</p>
+        <p class="fix"><b>Fix</b> Namespace names — they are unique per <em>document</em>, not per module. Watch for a component rendering twice at once.</p>
+      </div>
+    </div>
+    <div class="pitfall">
+      <span class="n">03</span>
+      <div>
+        <h4>Route-level <code>providers</code> leak before Angular 22</h4>
+        <p>Tools from a page you left are still in the list.</p>
+        <p class="fix"><b>Fix</b> Declare in the routed component instead.</p>
+      </div>
+    </div>
+    <div class="pitfall">
+      <span class="n">04</span>
+      <div>
+        <h4><code>executeTool</code> is not standard</h4>
+        <p><code>executeTool is not a function</code> — usually in an in-page chat or inspector.</p>
+        <p class="fix"><b>Fix</b> Feature-detect it. The polyfill supplies it; the bare spec does not.</p>
+      </div>
+    </div>
+    <div class="pitfall">
+      <span class="n">05</span>
+      <div>
+        <h4><code>inputSchema</code> comes back in two shapes</h4>
+        <p>A JSON <em>string</em> on Chrome 149–153, an object from 154.0.8013 onward.</p>
+        <p class="fix"><b>Fix</b> Branch on <code>typeof</code> and guard the parse. Affects reading tools back, not registering them.</p>
+      </div>
+    </div>
+    <div class="pitfall">
+      <span class="n">06</span>
+      <div>
+        <h4><code>title</code> defaults to <code>''</code></h4>
+        <p>Blank labels in a tool list — <code>??</code> only falls through on null/undefined.</p>
+        <p class="fix"><b>Fix</b> <code>tool.title || tool.name</code></p>
+      </div>
+    </div>
+    <div class="pitfall">
+      <span class="n">07</span>
+      <div>
+        <h4><code>file:</code> installs break secondary entry points</h4>
+        <p><code>TS7031: implicitly has an 'any' type</code> on tool arguments, with nothing pointing at the cause. A symlink defeats the self-referential type import, and <code>skipLibCheck</code> hides it.</p>
+        <p class="fix"><b>Fix</b> Test against a packed tarball, which installs as a real directory.</p>
+      </div>
+    </div>
+    <div class="pitfall">
+      <span class="n">08</span>
+      <div>
+        <h4><code>toolchange</code> does not fire where the spec says</h4>
+        <p>The spec dispatches on the <em>document</em>. The polyfill dispatches only on the <em>ModelContext</em>. Measured across route changes: document listener 0 calls, context listener 4.</p>
+        <p class="fix"><b>Fix</b> Listen on both.</p>
+      </div>
+    </div>
+    <div class="pitfall">
+      <span class="n">09</span>
+      <div>
+        <h4>Heterogeneous schemas will not type-check in one array</h4>
+        <p>One type parameter covers the whole array, so tools with different schemas have no valid <code>S</code> — <a href="https://github.com/angular/angular/issues/70125">angular#70125</a>, still open.</p>
+        <p class="fix"><b>Fix</b> One <code>provideExperimentalWebMcpTools</code> call per tool; each array stays homogeneous and needs no cast.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="note measured">
+    <span class="tag">The wider lesson · from pitfall 08</span>
+    <p>
+      That bug survived twenty passing tests, because the test fake dispatched
+      <code>toolchange</code> on <em>both</em> targets — faithful to the spec, and therefore
+      <strong>more generous than the real implementation</strong>. A fake more capable than
+      reality hides exactly this class of bug.
+    </p>
+    <p>
+      Anything that depends on <em>where</em> an event fires, or on <code>event.origin</code>
+      / <code>event.source</code>, cannot be trusted from jsdom. Only the browser could have
+      caught it.
+    </p>
+  </div>
+
+  <h3>A debugging checklist</h3>
+  <ol>
+    <li><strong>Is it registered?</strong> <code>await document.modelContext.getTools()</code> in the console.</li>
+    <li><strong>If not</strong> — did registration throw? Is <code>document.modelContext</code> even there? Is this a server render?</li>
+    <li><strong>Did it vanish?</strong> Something destroyed its injector. Which one did you attach to?</li>
+    <li><strong>Is it there twice?</strong> A component rendering twice, or two features choosing one name.</li>
+    <li><strong>Does calling it throw <code>NG0203</code>?</strong> Something is calling <code>execute</code> directly instead of going through <code>executeTool</code>, skipping <code>runInInjectionContext</code>.</li>
+    <li><strong>Does the agent keep misusing it?</strong> That is a <code>description</code> problem, not a code problem.</li>
+  </ol>
+</section>
+
+<footer>
+  <p>
+    Verified against <code>@angular/core@22.1.6</code>'s shipped <code>.d.ts</code> and
+    <code>fesm2022</code> build, the W3C Web Machine Learning CG draft,
+    <code>@mcp-b/webmcp-types@5.1.0</code>, and Chrome 150–154. Where a claim was measured
+    rather than read, the page says so.
+  </p>
+  <p>
+    WebMCP is a Community Group draft and Angular's support is marked
+    <code>@experimental</code> — the API may change outside a major version. The full written
+    course, with sources for every claim, lives in <code>docs/architecture/</code>.
+  </p>
+</footer>
+
+</div>

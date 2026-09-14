@@ -114,6 +114,14 @@ initial bundle: measured on a production build it lands in its own lazy chunk
 
 Not yet done: `ng add`. See `docs/PLAN.md` §6.
 
+## Learning the architecture
+
+`docs/architecture/` is a six-chapter course on how WebMCP works, how Angular wires
+into it, and the nine things that bite — every claim verified against shipped sources,
+and the measured ones labelled as such. There is a
+[diagrammed visual guide](https://claude.ai/code/artifact/190f4737-c9ea-4892-aa2b-f9c854716f83)
+alongside it.
+
 ## Layout
 
 ```
@@ -122,6 +130,7 @@ parity/                      the M3 release gate — spec suite + .d.ts diff
 fixtures/ssr-consumer/       real Angular SSR app, prerendered against the tarball
 scripts/check-packaging.mjs  packs, installs the tarball, prerenders, asserts
 projects/…/schematics/       ng generate ng-webmcp-compat:migrate
+docs/architecture/           a six-chapter course on the architecture, + visual guide
 docs/PLAN.md                 requirements, architecture, milestones, risks
 docs/M0-FINDINGS.md          verified findings + corrections to the plan
 ```
