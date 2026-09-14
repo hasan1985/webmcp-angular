@@ -48,7 +48,6 @@ Not yet done: real-browser verification, SSR/polyfill hardening (M4), the migrat
 
 ```
 projects/ng-webmcp-compat/   the library (5 entry points)
-projects/demo/               sample app + e2e target
 parity/                      the M3 release gate — spec suite + .d.ts diff
 docs/PLAN.md                 requirements, architecture, milestones, risks
 docs/M0-FINDINGS.md          verified findings + corrections to the plan
@@ -60,7 +59,7 @@ docs/M0-FINDINGS.md          verified findings + corrections to the plan
 npm install
 npx ng build ng-webmcp-compat     # builds all 5 entry points to dist/
 npm run verify                    # parity gate: .d.ts diff + spec suite on Angular 20/21/22
-npx ng serve demo
+# the showcase app is a sibling repo: ../ng-webmcp-playground
 ```
 
 Native WebMCP currently requires Chromium with `--enable-features=WebMCP`. Without it the library degrades to a no-op with one dev-mode warning — it never throws.

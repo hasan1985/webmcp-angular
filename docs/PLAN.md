@@ -330,8 +330,9 @@ ng-webmcp-kit/
     src/devtools/           inspector (dev only)                → /devtools
     src/testing/            harness + matchers                  → /testing
     schematics/             ng-add, migrate
-  projects/parity/          v22 fixture app; runs the shared spec against @angular/core
-  projects/demo/            sample app + Playwright e2e (Chrome 150)
+  parity/                   v22 fixture; runs the shared spec against @angular/core
+                            (the showcase app is a SEPARATE repo — it must install
+                             the built package, not import workspace source)
 ```
 
 ---
@@ -345,7 +346,7 @@ ng-webmcp-kit/
 | ~~M2~~ | ✅ Core API surface | `declareExperimentalWebMcpTool`, `provideExperimentalWebMcpTools`, types. No env-initializer shim needed at a v20 floor | **Done** — emitted `.d.ts` signatures match v22 |
 | ~~M3~~ | ✅ **Parity suite** | `parity/` — shared spec + fake ModelContext, run against ours on 20/21/22 and against `@angular/core` on 22; `.d.ts` diff script; GitHub Actions matrix + weekly drift cron | **Done** — 12/12 on v20 and v21, 24/24 on v22; all 5 declarations match |
 | M4 | Unsupported / SSR / polyfill | Fallback chain, `afterNextRender`, optional polyfill peer | No errors in Firefox/Safari; SSR build clean |
-| M5 | v22 delegation + migrate schematic | `CoreDelegationGuard`, `ng generate :migrate` | Migrating the demo app to v22 = run one command, zero source edits |
+| M5 | v22 delegation + migrate schematic + **packaging check** | `CoreDelegationGuard`, `ng generate :migrate`, CI step that `npm pack`s the library, installs the tarball into a throwaway app and builds it | Migration = one command, zero source edits; built package proven installable |
 | M6 | `withExperimentalAutoCleanupInjectors` shim | Router-events injector cleanup, or documented component-scoped alternative. **Riskier than first assessed**: `RouterFeatureKind` is a numeric enum, v22 uses `10` | Route tools gone after navigation, proven by e2e |
 | M7 | `/testing` + `/devtools` | harness, matchers, inspector | Tools testable without a real browser agent |
 | M8 | `/bridge` (JSON-RPC) | postMessage transport, origin allowlist, MCP-B wire compat | A registered tool callable from Claude Desktop via local relay |
