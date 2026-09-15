@@ -1,6 +1,6 @@
 name: parity
 
-# The M3 release gate. Proves ng-webmcp-compat matches @angular/core's
+# The M3 release gate. Proves webmcp-angular matches @angular/core's
 # experimental WebMCP API in both behaviour and types. If this fails, the
 # compatibility claim the package is built on is no longer true.
 on:

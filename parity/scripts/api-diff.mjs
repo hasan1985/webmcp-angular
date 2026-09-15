@@ -16,7 +16,7 @@ import {fileURLToPath} from 'node:url';
 const here = (p) => fileURLToPath(new URL(p, import.meta.url));
 
 const ANGULAR_DTS = here('../node_modules/@angular/core/types/core.d.ts');
-const OURS_DTS = here('../../dist/ng-webmcp-compat/index.d.ts');
+const OURS_DTS = here('../../dist/webmcp-angular/index.d.ts');
 
 /**
  * `@angular/core` declares these internally under short names and renames them
@@ -77,12 +77,12 @@ function normalize(decl, aliases) {
 function main() {
   for (const [label, path] of [
     ['@angular/core', ANGULAR_DTS],
-    ['ng-webmcp-compat', OURS_DTS],
+    ['webmcp-angular', OURS_DTS],
   ]) {
     if (!existsSync(path)) {
       console.error(`✖ Cannot read ${label} types at ${path}`);
       if (path === OURS_DTS) {
-        console.error('  Build the library first: npx ng build ng-webmcp-compat');
+        console.error('  Build the library first: npx ng build webmcp-angular');
       }
       process.exit(2);
     }

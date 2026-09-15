@@ -49,4 +49,4 @@ parity/node_modules
 fixtures/*/node_modules
 fixtures/*/dist
 fixtures/*/.angular
-/ng-webmcp-compat-*.tgz
+/webmcp-angular-*.tgz

@@ -1,9 +1,9 @@
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
 import {Injector, type EnvironmentInjector} from '@angular/core';
 
-import {createWebMcpBridge} from '../../dist/ng-webmcp-compat/fesm2022/ng-webmcp-compat-bridge.mjs';
-import {installWebMcpTestHarness} from '../../dist/ng-webmcp-compat/fesm2022/ng-webmcp-compat-testing.mjs';
-import {declareExperimentalWebMcpTool} from '../../dist/ng-webmcp-compat/fesm2022/ng-webmcp-compat.mjs';
+import {createWebMcpBridge} from '../../dist/webmcp-angular/fesm2022/webmcp-angular-bridge.mjs';
+import {installWebMcpTestHarness} from '../../dist/webmcp-angular/fesm2022/webmcp-angular-testing.mjs';
+import {declareExperimentalWebMcpTool} from '../../dist/webmcp-angular/fesm2022/webmcp-angular.mjs';
 
 /**
  * M8 — the JSON-RPC bridge.

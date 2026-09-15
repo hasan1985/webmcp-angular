@@ -1,11 +1,11 @@
 import {describe, it, expect, afterEach} from 'vitest';
 import {Injector, createEnvironmentInjector, type EnvironmentInjector} from '@angular/core';
 
-import {installWebMcpTestHarness} from '../../dist/ng-webmcp-compat/fesm2022/ng-webmcp-compat-testing.mjs';
+import {installWebMcpTestHarness} from '../../dist/webmcp-angular/fesm2022/webmcp-angular-testing.mjs';
 import {
   declareExperimentalWebMcpTool,
   provideExperimentalWebMcpTools,
-} from '../../dist/ng-webmcp-compat/fesm2022/ng-webmcp-compat.mjs';
+} from '../../dist/webmcp-angular/fesm2022/webmcp-angular.mjs';
 
 /**
  * M7 — the test harness.

@@ -1,9 +1,9 @@
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
 import {Injector, type EnvironmentInjector} from '@angular/core';
 
-import {mountWebMcpDevtools} from '../../dist/ng-webmcp-compat/fesm2022/ng-webmcp-compat-devtools.mjs';
-import {installWebMcpTestHarness} from '../../dist/ng-webmcp-compat/fesm2022/ng-webmcp-compat-testing.mjs';
-import {declareExperimentalWebMcpTool} from '../../dist/ng-webmcp-compat/fesm2022/ng-webmcp-compat.mjs';
+import {mountWebMcpDevtools} from '../../dist/webmcp-angular/fesm2022/webmcp-angular-devtools.mjs';
+import {installWebMcpTestHarness} from '../../dist/webmcp-angular/fesm2022/webmcp-angular-testing.mjs';
+import {declareExperimentalWebMcpTool} from '../../dist/webmcp-angular/fesm2022/webmcp-angular.mjs';
 
 /**
  * M9 — the devtools inspector.

@@ -1,11 +1,11 @@
 /*
- * ng-webmcp-compat/polyfill
+ * webmcp-angular/polyfill
  *
  * NON-MIGRATING entry point: Angular v22 has no equivalent. Anything imported
  * from here must be removed or replaced by hand when migrating to @angular/core.
  */
 
-import {resolveModelContext} from 'ng-webmcp-compat';
+import {resolveModelContext} from 'webmcp-angular';
 
 /** What backed `document.modelContext` after `installWebMcpPolyfill()` returned. */
 export type WebMcpBacking =
@@ -33,7 +33,7 @@ export interface InstallWebMcpPolyfillOptions {
  *
  * ```ts
  * // main.ts
- * import {installWebMcpPolyfill} from 'ng-webmcp-compat/polyfill';
+ * import {installWebMcpPolyfill} from 'webmcp-angular/polyfill';
  *
  * installWebMcpPolyfill()
  *   .then(() => bootstrapApplication(App, appConfig))

@@ -1,7 +1,7 @@
 # Parity suite — the M3 release gate
 
 This proves the compatibility claim instead of asserting it: that
-`ng-webmcp-compat` matches `@angular/core`'s experimental WebMCP API in both
+`webmcp-angular` matches `@angular/core`'s experimental WebMCP API in both
 **behaviour** and **types**.
 
 Without this, "signature-identical to v22" rests on a one-time manual source read

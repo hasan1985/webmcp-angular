@@ -1,5 +1,5 @@
 /*
- * ng-webmcp-compat/devtools
+ * webmcp-angular/devtools
  *
  * NON-MIGRATING entry point: Angular v22 has no equivalent. Development only.
  *
@@ -55,7 +55,7 @@ interface LogEntry {
  * import {isDevMode} from '@angular/core';
  *
  * if (isDevMode()) {
- *   const {mountWebMcpDevtools} = await import('ng-webmcp-compat/devtools');
+ *   const {mountWebMcpDevtools} = await import('webmcp-angular/devtools');
  *   mountWebMcpDevtools();
  * }
  * ```

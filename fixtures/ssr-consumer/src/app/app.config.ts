@@ -1,6 +1,6 @@
 import {ApplicationConfig, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection} from '@angular/core';
-import {provideExperimentalWebMcpTools} from 'ng-webmcp-compat';
-import {webMcpTool} from 'ng-webmcp-compat/strict';
+import {provideExperimentalWebMcpTools} from 'webmcp-angular';
+import {webMcpTool} from 'webmcp-angular/strict';
 
 // Uses the /strict secondary entry point on purpose. It imports its types from the
 // primary entry BY PACKAGE NAME, which silently degrades to `any` under a symlinked

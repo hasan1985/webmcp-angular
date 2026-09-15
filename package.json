@@ -1,5 +1,5 @@
 {
-  "name": "ng-webmcp-compat",
+  "name": "webmcp-angular",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -7,7 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "build:lib": "ng build ng-webmcp-compat && node scripts/build-schematics.mjs",
+    "build:lib": "ng build webmcp-angular && node scripts/build-schematics.mjs",
     "test:parity": "npm --prefix parity test",
     "test:api-diff": "npm run build:lib && node parity/scripts/api-diff.mjs",
     "verify": "npm run test:api-diff && npm run test:parity && npm run check:packaging",

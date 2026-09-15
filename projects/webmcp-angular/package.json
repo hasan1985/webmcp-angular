@@ -1,5 +1,5 @@
 {
-  "name": "ng-webmcp-compat",
+  "name": "webmcp-angular",
   "version": "0.0.1",
   "description": "API-compatible backport of Angular v22's experimental WebMCP support for Angular 20 and 21.",
   "keywords": [

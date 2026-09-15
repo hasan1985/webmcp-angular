@@ -1,4 +1,4 @@
-# ng-webmcp-compat
+# webmcp-angular
 
 An **API-compatible backport of Angular v22's experimental [WebMCP](https://angular.dev/ai/webmcp) support** for Angular 20 and 21.
 
@@ -8,10 +8,10 @@ WebMCP is a [W3C Web Machine Learning CG draft](https://webmachinelearning.githu
 
 > **Everything in this package exists to be deleted.**
 
-Success is not "the best Angular WebMCP library." It is: *the day your app reaches Angular 22, swapping `ng-webmcp-compat` for `@angular/core` changes no application code except imports.*
+Success is not "the best Angular WebMCP library." It is: *the day your app reaches Angular 22, swapping `webmcp-angular` for `@angular/core` changes no application code except imports.*
 
 ```ts
-import { provideExperimentalWebMcpTools } from 'ng-webmcp-compat';
+import { provideExperimentalWebMcpTools } from 'webmcp-angular';
 // at Angular 22 ──▶
 import { provideExperimentalWebMcpTools } from '@angular/core';
 ```
@@ -19,7 +19,7 @@ import { provideExperimentalWebMcpTools } from '@angular/core';
 And you do not have to do it by hand:
 
 ```bash
-ng generate ng-webmcp-compat:migrate --dry-run
+ng generate webmcp-angular:migrate --dry-run
 ```
 
 It rewrites core imports, reports anything from a non-core entry point instead of
@@ -33,7 +33,7 @@ Additive ideas live in separate, clearly-marked entry points that you opt into k
 
 | Entry point | Migrates to v22? | Contents |
 |---|---|---|
-| `ng-webmcp-compat` | ✅ identical surface | `declareExperimentalWebMcpTool`, `provideExperimentalWebMcpTools`, types |
+| `webmcp-angular` | ✅ identical surface | `declareExperimentalWebMcpTool`, `provideExperimentalWebMcpTools`, types |
 | `/strict` | ❌ remove on migrate | `webMcpTool()` identity helper mitigating angular#70125 |
 | `/polyfill` | ❌ remove on migrate | `installWebMcpPolyfill()` — installs `document.modelContext` where the browser has none |
 | `/bridge` | ❌ no v22 equivalent | `createWebMcpBridge()` — MCP over JSON-RPC 2.0, so tools reach Claude Desktop / Cursor via an extension or the MCP-B relay |
@@ -71,7 +71,7 @@ component instead — that cleans up correctly on every supported version.
 Testing your own tools needs no browser:
 
 ```ts
-import {installWebMcpTestHarness} from 'ng-webmcp-compat/testing';
+import {installWebMcpTestHarness} from 'webmcp-angular/testing';
 
 const webmcp = installWebMcpTestHarness();
 afterEach(() => webmcp.uninstall());
@@ -83,7 +83,7 @@ expect(await webmcp.invoke('add_to_cart', {sku: 'A1', qty: 2})).toEqual({ok: tru
 And the same tools can be exposed to MCP clients outside the page:
 
 ```ts
-import {createWebMcpBridge} from 'ng-webmcp-compat/bridge';
+import {createWebMcpBridge} from 'webmcp-angular/bridge';
 
 createWebMcpBridge({allowedOrigins: [window.location.origin]}).start();
 ```
@@ -100,7 +100,7 @@ And there is an inspector for development:
 import {isDevMode} from '@angular/core';
 
 if (isDevMode()) {
-  const {mountWebMcpDevtools} = await import('ng-webmcp-compat/devtools');
+  const {mountWebMcpDevtools} = await import('webmcp-angular/devtools');
   mountWebMcpDevtools();     // Ctrl/Cmd + Shift + M
 }
 ```
@@ -125,11 +125,11 @@ alongside it.
 ## Layout
 
 ```
-projects/ng-webmcp-compat/   the library (5 entry points)
+projects/webmcp-angular/   the library (5 entry points)
 parity/                      the M3 release gate — spec suite + .d.ts diff
 fixtures/ssr-consumer/       real Angular SSR app, prerendered against the tarball
 scripts/check-packaging.mjs  packs, installs the tarball, prerenders, asserts
-projects/…/schematics/       ng generate ng-webmcp-compat:migrate
+projects/…/schematics/       ng generate webmcp-angular:migrate
 docs/architecture/           a six-chapter course on the architecture, + visual guide
 docs/PLAN.md                 requirements, architecture, milestones, risks
 docs/M0-FINDINGS.md          verified findings + corrections to the plan
@@ -139,7 +139,7 @@ docs/M0-FINDINGS.md          verified findings + corrections to the plan
 
 ```bash
 npm install
-npx ng build ng-webmcp-compat     # builds all 5 entry points to dist/
+npx ng build webmcp-angular     # builds all 5 entry points to dist/
 npm run verify                    # everything: .d.ts diff, spec suite on Angular 20/21/22,
                                   # SSR + unsupported-browser specs, tarball/prerender check
 npm run check:packaging           # just the tarball install + SSR prerender

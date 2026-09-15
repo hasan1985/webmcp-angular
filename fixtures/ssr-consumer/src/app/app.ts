@@ -1,5 +1,5 @@
 import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core';
-import {declareExperimentalWebMcpTool, isWebMcpSupported} from 'ng-webmcp-compat';
+import {declareExperimentalWebMcpTool, isWebMcpSupported} from 'webmcp-angular';
 
 @Component({
   selector: 'app-root',

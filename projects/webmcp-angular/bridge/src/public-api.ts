@@ -1,5 +1,5 @@
 /*
- * ng-webmcp-compat/bridge
+ * webmcp-angular/bridge
  *
  * NON-MIGRATING entry point: Angular v22 has no equivalent, and none is planned.
  * This is the one capability that might outlive the migration — see the README.
@@ -98,7 +98,7 @@ interface Envelope {
  *
  * ```ts
  * // main.ts, after the polyfill and before or after bootstrap
- * import {createWebMcpBridge} from 'ng-webmcp-compat/bridge';
+ * import {createWebMcpBridge} from 'webmcp-angular/bridge';
  *
  * const bridge = createWebMcpBridge({
  *   allowedOrigins: [window.location.origin],
@@ -122,12 +122,12 @@ export function createWebMcpBridge(options: WebMcpBridgeOptions): WebMcpBridge {
 
   const channel = options.channelId ?? DEFAULT_CHANNEL_ID;
   const allowed = new Set(options.allowedOrigins);
-  const serverInfo = options.serverInfo ?? {name: 'ng-webmcp-compat', version: '0.0.0'};
+  const serverInfo = options.serverInfo ?? {name: 'webmcp-angular', version: '0.0.0'};
   // Only fires on a malformed JSON-RPC message or an unexpected handler failure,
   // both of which are worth surfacing rather than swallowing.
   const onError =
     options.onError ??
-    ((error: Error) => console.warn('[ng-webmcp-compat/bridge]', error.message));
+    ((error: Error) => console.warn('[webmcp-angular/bridge]', error.message));
 
   let running = false;
   let messageHandler: ((event: MessageEvent) => void) | undefined;

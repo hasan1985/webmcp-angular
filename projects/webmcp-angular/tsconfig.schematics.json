@@ -11,7 +11,7 @@
     "noEmitOnError": true,
     "skipLibCheck": true,
     "rootDir": "schematics",
-    "outDir": "../../dist/ng-webmcp-compat/schematics"
+    "outDir": "../../dist/webmcp-angular/schematics"
   },
   "include": ["schematics/**/*.ts"],
   "exclude": ["schematics/**/*.spec.ts"]

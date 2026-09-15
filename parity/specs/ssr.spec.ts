@@ -9,7 +9,7 @@ import {
   isWebMcpSupported,
   provideExperimentalWebMcpTools,
   resolveModelContext,
-} from '../../dist/ng-webmcp-compat/fesm2022/ng-webmcp-compat.mjs';
+} from '../../dist/webmcp-angular/fesm2022/webmcp-angular.mjs';
 
 /**
  * M4 — server-side rendering.

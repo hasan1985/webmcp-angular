@@ -2,7 +2,7 @@ import {Rule, SchematicContext, SchematicsException, Tree} from '@angular-devkit
 import * as ts from 'typescript';
 
 /**
- * `ng generate ng-webmcp-compat:migrate`
+ * `ng generate webmcp-angular:migrate`
  *
  * The payoff for this package's whole premise: once the project is on Angular 22,
  * every core import moves to `@angular/core` and the dependency comes out. If this
@@ -14,7 +14,7 @@ import * as ts from 'typescript';
  * equivalent, so they are reported for a human to decide on, never rewritten.
  */
 
-const PACKAGE = 'ng-webmcp-compat';
+const PACKAGE = 'webmcp-angular';
 
 /** Exports that exist in `@angular/core` v22 under the same names. */
 const CORE_SYMBOLS = new Set([

@@ -1,5 +1,5 @@
 import {bootstrapApplication} from '@angular/platform-browser';
-import {installWebMcpPolyfill} from 'ng-webmcp-compat/polyfill';
+import {installWebMcpPolyfill} from 'webmcp-angular/polyfill';
 
 import {App} from './app/app';
 import {appConfig} from './app/app.config';

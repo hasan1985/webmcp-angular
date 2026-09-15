@@ -4,12 +4,12 @@ import {cleanupWebMCPPolyfill} from '@mcp-b/webmcp-polyfill';
 
 import {
   installWebMcpPolyfill,
-} from '../../dist/ng-webmcp-compat/fesm2022/ng-webmcp-compat-polyfill.mjs';
+} from '../../dist/webmcp-angular/fesm2022/webmcp-angular-polyfill.mjs';
 import {
   declareExperimentalWebMcpTool,
   isWebMcpSupported,
   resolveModelContext,
-} from '../../dist/ng-webmcp-compat/fesm2022/ng-webmcp-compat.mjs';
+} from '../../dist/webmcp-angular/fesm2022/webmcp-angular.mjs';
 
 /**
  * M4 — the polyfill entry point.

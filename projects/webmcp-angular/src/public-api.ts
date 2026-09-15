@@ -1,5 +1,5 @@
 /*
- * ng-webmcp-compat — public API (core entry point)
+ * webmcp-angular — public API (core entry point)
  *
  * GOVERNING RULE: every symbol exported from THIS file must be signature-identical
  * to `@angular/core` v22. Migrating to Angular 22 must be a change of import path

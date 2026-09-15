@@ -4,7 +4,7 @@ import {SchematicTestRunner, UnitTestTree} from '@angular-devkit/schematics/test
 import {fileURLToPath} from 'node:url';
 
 const collection = fileURLToPath(
-  new URL('../../dist/ng-webmcp-compat/schematics/collection.json', import.meta.url),
+  new URL('../../dist/webmcp-angular/schematics/collection.json', import.meta.url),
 );
 
 /**
@@ -18,7 +18,7 @@ const collection = fileURLToPath(
  *     human then fixes is fine; a silently-wrong rewrite is not.
  *  3. Never remove the dependency while any import still needs a decision.
  */
-describe('ng generate ng-webmcp-compat:migrate', () => {
+describe('ng generate webmcp-angular:migrate', () => {
   let runner: SchematicTestRunner;
   let tree: UnitTestTree;
 
@@ -26,9 +26,9 @@ describe('ng generate ng-webmcp-compat:migrate', () => {
     JSON.stringify({name: 'app', dependencies: deps}, null, 2);
 
   beforeEach(() => {
-    runner = new SchematicTestRunner('ng-webmcp-compat', collection);
+    runner = new SchematicTestRunner('webmcp-angular', collection);
     tree = new UnitTestTree(new HostTree());
-    tree.create('/package.json', pkg({'ng-webmcp-compat': '^0.0.1', '@angular/core': '^22.1.6'}));
+    tree.create('/package.json', pkg({'webmcp-angular': '^0.0.1', '@angular/core': '^22.1.6'}));
   });
 
   const run = () => runner.runSchematic('migrate', {}, tree);
@@ -38,7 +38,7 @@ describe('ng generate ng-webmcp-compat:migrate', () => {
       '/src/app.config.ts',
       [
         `import {ApplicationConfig} from '@angular/core';`,
-        `import {provideExperimentalWebMcpTools} from 'ng-webmcp-compat';`,
+        `import {provideExperimentalWebMcpTools} from 'webmcp-angular';`,
         ``,
         `export const appConfig: ApplicationConfig = {`,
         `  providers: [provideExperimentalWebMcpTools([])],`,
@@ -51,7 +51,7 @@ describe('ng generate ng-webmcp-compat:migrate', () => {
     const after = result.readContent('/src/app.config.ts');
 
     expect(after).toContain(`import {provideExperimentalWebMcpTools} from '@angular/core';`);
-    expect(after).not.toContain('ng-webmcp-compat');
+    expect(after).not.toContain('webmcp-angular');
     // Nothing but the specifier may move.
     expect(after).toContain(`import {ApplicationConfig} from '@angular/core';`);
     expect(after).toContain(`  providers: [provideExperimentalWebMcpTools([])],`);
@@ -61,7 +61,7 @@ describe('ng generate ng-webmcp-compat:migrate', () => {
     tree.create(
       '/src/tools.ts',
       [
-        `import {declareExperimentalWebMcpTool, type WebMcpToolDescriptor as Desc} from 'ng-webmcp-compat';`,
+        `import {declareExperimentalWebMcpTool, type WebMcpToolDescriptor as Desc} from 'webmcp-angular';`,
         `export type T = Desc<{type: 'object'}>;`,
         `export const d = declareExperimentalWebMcpTool;`,
         ``,
@@ -77,11 +77,11 @@ describe('ng generate ng-webmcp-compat:migrate', () => {
   it('removes the dependency from package.json on a clean migration', async () => {
     tree.create(
       '/src/a.ts',
-      `import {declareExperimentalWebMcpTool} from 'ng-webmcp-compat';\nexport const a = declareExperimentalWebMcpTool;\n`,
+      `import {declareExperimentalWebMcpTool} from 'webmcp-angular';\nexport const a = declareExperimentalWebMcpTool;\n`,
     );
 
     const after = JSON.parse((await run()).readContent('/package.json'));
-    expect(after.dependencies['ng-webmcp-compat']).toBeUndefined();
+    expect(after.dependencies['webmcp-angular']).toBeUndefined();
     expect(after.dependencies['@angular/core']).toBe('^22.1.6');
   });
 
@@ -89,8 +89,8 @@ describe('ng generate ng-webmcp-compat:migrate', () => {
     tree.create(
       '/src/tools.ts',
       [
-        `import {provideExperimentalWebMcpTools} from 'ng-webmcp-compat';`,
-        `import {webMcpTool} from 'ng-webmcp-compat/strict';`,
+        `import {provideExperimentalWebMcpTools} from 'webmcp-angular';`,
+        `import {webMcpTool} from 'webmcp-angular/strict';`,
         `export const t = webMcpTool;`,
         ``,
       ].join('\n'),
@@ -102,24 +102,24 @@ describe('ng generate ng-webmcp-compat:migrate', () => {
     // The core import still migrates…
     expect(after).toContain(`import {provideExperimentalWebMcpTools} from '@angular/core';`);
     // …but /strict has no @angular/core equivalent, so it is untouched.
-    expect(after).toContain(`import {webMcpTool} from 'ng-webmcp-compat/strict';`);
+    expect(after).toContain(`import {webMcpTool} from 'webmcp-angular/strict';`);
 
     // And the dependency must survive, or the remaining import would break.
     const json = JSON.parse(result.readContent('/package.json'));
-    expect(json.dependencies['ng-webmcp-compat']).toBe('^0.0.1');
+    expect(json.dependencies['webmcp-angular']).toBe('^0.0.1');
   });
 
   it('does NOT rewrite symbols @angular/core does not export', async () => {
     tree.create(
       '/src/probe.ts',
-      `import {isWebMcpSupported} from 'ng-webmcp-compat';\nexport const s = isWebMcpSupported();\n`,
+      `import {isWebMcpSupported} from 'webmcp-angular';\nexport const s = isWebMcpSupported();\n`,
     );
 
     const result = await run();
     expect(result.readContent('/src/probe.ts')).toContain(
-      `import {isWebMcpSupported} from 'ng-webmcp-compat';`,
+      `import {isWebMcpSupported} from 'webmcp-angular';`,
     );
-    expect(JSON.parse(result.readContent('/package.json')).dependencies['ng-webmcp-compat']).toBe(
+    expect(JSON.parse(result.readContent('/package.json')).dependencies['webmcp-angular']).toBe(
       '^0.0.1',
     );
   });
@@ -127,17 +127,17 @@ describe('ng generate ng-webmcp-compat:migrate', () => {
   it('does NOT rewrite a namespace import', async () => {
     tree.create(
       '/src/ns.ts',
-      `import * as webmcp from 'ng-webmcp-compat';\nexport const d = webmcp.declareExperimentalWebMcpTool;\n`,
+      `import * as webmcp from 'webmcp-angular';\nexport const d = webmcp.declareExperimentalWebMcpTool;\n`,
     );
 
     const after = (await run()).readContent('/src/ns.ts');
-    expect(after).toContain(`import * as webmcp from 'ng-webmcp-compat';`);
+    expect(after).toContain(`import * as webmcp from 'webmcp-angular';`);
   });
 
   it('ignores the package name in comments and strings', async () => {
     const content = [
-      `// see the ng-webmcp-compat README`,
-      `export const note = 'ng-webmcp-compat is a backport';`,
+      `// see the webmcp-angular README`,
+      `export const note = 'webmcp-angular is a backport';`,
       ``,
     ].join('\n');
     tree.create('/src/text.ts', content);
@@ -146,7 +146,7 @@ describe('ng generate ng-webmcp-compat:migrate', () => {
   });
 
   it('skips node_modules and dist', async () => {
-    const content = `import {declareExperimentalWebMcpTool} from 'ng-webmcp-compat';\n`;
+    const content = `import {declareExperimentalWebMcpTool} from 'webmcp-angular';\n`;
     tree.create('/node_modules/some-lib/index.ts', content);
     tree.create('/dist/build-output.ts', content);
 
@@ -160,17 +160,17 @@ describe('ng generate ng-webmcp-compat:migrate', () => {
       '/src/mixed.ts',
       [
         `import {Component} from '@angular/core';`,
-        `import {declareExperimentalWebMcpTool} from 'ng-webmcp-compat';`,
-        `import {installWebMcpPolyfill} from 'ng-webmcp-compat/polyfill';`,
-        `import {webMcpTool} from 'ng-webmcp-compat/strict';`,
+        `import {declareExperimentalWebMcpTool} from 'webmcp-angular';`,
+        `import {installWebMcpPolyfill} from 'webmcp-angular/polyfill';`,
+        `import {webMcpTool} from 'webmcp-angular/strict';`,
         ``,
       ].join('\n'),
     );
 
     const after = (await run()).readContent('/src/mixed.ts');
     expect(after).toContain(`import {declareExperimentalWebMcpTool} from '@angular/core';`);
-    expect(after).toContain(`from 'ng-webmcp-compat/polyfill';`);
-    expect(after).toContain(`from 'ng-webmcp-compat/strict';`);
+    expect(after).toContain(`from 'webmcp-angular/polyfill';`);
+    expect(after).toContain(`from 'webmcp-angular/strict';`);
     expect(after).toContain(`import {Component} from '@angular/core';`);
   });
 });

@@ -6,20 +6,20 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "ng-webmcp-compat": {
+    "webmcp-angular": {
       "projectType": "library",
-      "root": "projects/ng-webmcp-compat",
-      "sourceRoot": "projects/ng-webmcp-compat/src",
+      "root": "projects/webmcp-angular",
+      "sourceRoot": "projects/webmcp-angular/src",
       "prefix": "wmcp",
       "architect": {
         "build": {
           "builder": "@angular/build:ng-packagr",
           "configurations": {
             "production": {
-              "tsConfig": "projects/ng-webmcp-compat/tsconfig.lib.prod.json"
+              "tsConfig": "projects/webmcp-angular/tsconfig.lib.prod.json"
             },
             "development": {
-              "tsConfig": "projects/ng-webmcp-compat/tsconfig.lib.json"
+              "tsConfig": "projects/webmcp-angular/tsconfig.lib.json"
             }
           },
           "defaultConfiguration": "production"
@@ -27,7 +27,7 @@
         "test": {
           "builder": "@angular/build:karma",
           "options": {
-            "tsConfig": "projects/ng-webmcp-compat/tsconfig.spec.json"
+            "tsConfig": "projects/webmcp-angular/tsconfig.spec.json"
           }
         }
       }

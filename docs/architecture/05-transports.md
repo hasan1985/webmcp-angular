@@ -60,7 +60,7 @@ It must finish **before** tools register, which rules out doing it in a provider
 
 ```ts
 // main.ts
-import {installWebMcpPolyfill} from 'ng-webmcp-compat/polyfill';
+import {installWebMcpPolyfill} from 'webmcp-angular/polyfill';
 
 installWebMcpPolyfill()
   .then(() => bootstrapApplication(App, appConfig))
@@ -89,7 +89,7 @@ WebMCP has no wire format, so an agent outside the page cannot see
 `postMessage` envelopes that `@mcp-b/transports` understands:
 
 ```ts
-import {createWebMcpBridge} from 'ng-webmcp-compat/bridge';
+import {createWebMcpBridge} from 'webmcp-angular/bridge';
 
 createWebMcpBridge({
   allowedOrigins: [window.location.origin],

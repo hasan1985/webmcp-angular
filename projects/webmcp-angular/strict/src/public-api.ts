@@ -1,11 +1,11 @@
 /*
- * ng-webmcp-compat/strict
+ * webmcp-angular/strict
  *
  * NON-MIGRATING entry point: Angular v22 has no equivalent. Anything imported
  * from here must be removed or replaced by hand when migrating to @angular/core.
  */
 
-import type {JsonSchemaForInference, WebMcpToolDescriptor} from 'ng-webmcp-compat';
+import type {JsonSchemaForInference, WebMcpToolDescriptor} from 'webmcp-angular';
 
 /**
  * An identity function that pins each tool's schema to its own type parameter.

@@ -11,7 +11,7 @@ import {
 import {FakeModelContext, installFakeModelContext} from './fake-model-context';
 
 /**
- * The surface under test. Both `ng-webmcp-compat` and `@angular/core` v22 must
+ * The surface under test. Both `webmcp-angular` and `@angular/core` v22 must
  * satisfy this — if either stops matching, it will not type-check here.
  */
 export interface WebMcpImpl {

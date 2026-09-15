@@ -10,7 +10,7 @@
  *
  *  1. The published artifact installs and resolves — `exports` map, entry points,
  *     peer ranges, `.d.ts` reachability.
- *  2. Secondary entry points type-check at a consumer. `ng-webmcp-compat/strict`
+ *  2. Secondary entry points type-check at a consumer. `webmcp-angular/strict`
  *     imports its types from the primary entry *by package name*; under a `file:`
  *     install that symlinks, TypeScript resolves to the real path and the
  *     self-reference silently degrades to `any` (see docs/M0-FINDINGS.md §6.1).
@@ -29,7 +29,7 @@ import {join} from 'node:path';
 
 const repo = fileURLToPath(new URL('..', import.meta.url));
 const fixture = join(repo, 'fixtures', 'ssr-consumer');
-const dist = join(repo, 'dist', 'ng-webmcp-compat');
+const dist = join(repo, 'dist', 'webmcp-angular');
 const keep = process.argv.includes('--keep');
 
 const run = (cmd, args, cwd) => {
@@ -52,7 +52,7 @@ try {
 }
 
 // ng-packagr does not build schematics, so they are easy to forget and would ship
-// broken: `ng generate ng-webmcp-compat:migrate` fails with a confusing error if
+// broken: `ng generate webmcp-angular:migrate` fails with a confusing error if
 // the collection is missing from the package.
 for (const required of [
   'schematics/collection.json',

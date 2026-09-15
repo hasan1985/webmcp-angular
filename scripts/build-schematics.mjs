@@ -2,7 +2,7 @@
 /**
  * ng-packagr does not build schematics, so this compiles them separately and
  * copies the JSON metadata into the same dist folder the tarball is packed from.
- * Run after `ng build ng-webmcp-compat`, which is what wipes dist.
+ * Run after `ng build webmcp-angular`, which is what wipes dist.
  */
 import {execFileSync} from 'node:child_process';
 import {copyFileSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
@@ -10,10 +10,10 @@ import {fileURLToPath} from 'node:url';
 import {join} from 'node:path';
 
 const repo = fileURLToPath(new URL('..', import.meta.url));
-const src = join(repo, 'projects', 'ng-webmcp-compat', 'schematics');
-const out = join(repo, 'dist', 'ng-webmcp-compat', 'schematics');
+const src = join(repo, 'projects', 'webmcp-angular', 'schematics');
+const out = join(repo, 'dist', 'webmcp-angular', 'schematics');
 
-execFileSync('npx', ['tsc', '-p', join(repo, 'projects/ng-webmcp-compat/tsconfig.schematics.json')], {
+execFileSync('npx', ['tsc', '-p', join(repo, 'projects/webmcp-angular/tsconfig.schematics.json')], {
   cwd: repo,
   stdio: 'inherit',
 });
@@ -28,4 +28,4 @@ writeFileSync(join(out, 'collection.json'), `${JSON.stringify(collection, null, 
 
 copyFileSync(join(src, 'migrate', 'schema.json'), join(out, 'migrate', 'schema.json'));
 
-console.log('✔ schematics built into dist/ng-webmcp-compat/schematics');
+console.log('✔ schematics built into dist/webmcp-angular/schematics');

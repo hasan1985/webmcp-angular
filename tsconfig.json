@@ -8,8 +8,8 @@
     "noPropertyAccessFromIndexSignature": true,
     "noImplicitReturns": true,
     "paths": {
-      "ng-webmcp-compat": [
-        "./dist/ng-webmcp-compat"
+      "webmcp-angular": [
+        "./dist/webmcp-angular"
       ]
     },
     "noFallthroughCasesInSwitch": true,
@@ -30,10 +30,10 @@
   "files": [],
   "references": [
     {
-      "path": "./projects/ng-webmcp-compat/tsconfig.lib.json"
+      "path": "./projects/webmcp-angular/tsconfig.lib.json"
     },
     {
-      "path": "./projects/ng-webmcp-compat/tsconfig.spec.json"
+      "path": "./projects/webmcp-angular/tsconfig.spec.json"
     }
   ]
 }

@@ -171,7 +171,7 @@ accepts code Angular rejects is a migration trap. Mitigate with an *additive, op
 identity helper in a separate entry point:
 
 ```ts
-// ng-webmcp-compat/strict — opt-in, doesn't change the core signature
+// webmcp-angular/strict — opt-in, doesn't change the core signature
 export const webMcpTool = <const S extends JsonSchemaForInference>(
   t: WebMcpToolDescriptor<S>,
 ) => t;
@@ -347,7 +347,7 @@ ng-webmcp-kit/
 | ~~M2~~ | ✅ Core API surface | `declareExperimentalWebMcpTool`, `provideExperimentalWebMcpTools`, types. No env-initializer shim needed at a v20 floor | **Done** — emitted `.d.ts` signatures match v22 |
 | ~~M3~~ | ✅ **Parity suite** | `parity/` — shared spec + fake ModelContext, run against ours on 20/21/22 and against `@angular/core` on 22; `.d.ts` diff script; GitHub Actions matrix + weekly drift cron | **Done** — 12/12 on v20 and v21, 24/24 on v22; all 5 declarations match |
 | ~~M4~~ | ✅ Unsupported / SSR / polyfill | `/polyfill` entry point (`installWebMcpPolyfill`); SSR + unsupported-browser + cross-generation specs against the **built artifact**; real Angular SSR fixture prerendered via `scripts/check-packaging.mjs` | **Done** — 7 SSR, 15 env/polyfill tests; prerender emits `webmcp-supported: false`; regression-tested by removing the guard |
-| ~~M5~~ | ✅ Migrate schematic | `ng generate ng-webmcp-compat:migrate` — rewrites core imports to `@angular/core`, reports non-core entry points rather than guessing, removes the dependency only when nothing is left unresolved. **`CoreDelegationGuard` dropped, deliberately** (see below). | **Done** — 9 tests; dry-run against the real playground migrates 2 files and flags 2 |
+| ~~M5~~ | ✅ Migrate schematic | `ng generate webmcp-angular:migrate` — rewrites core imports to `@angular/core`, reports non-core entry points rather than guessing, removes the dependency only when nothing is left unresolved. **`CoreDelegationGuard` dropped, deliberately** (see below). | **Done** — 9 tests; dry-run against the real playground migrates 2 files and flags 2 |
 | ~~M6~~ | ✅ **Settled: no shim** | Leak measured in Chrome on Angular 20 (route providers leak, component scope does not). Shipping the documented component-scoped pattern instead — a `RouterFeature` cannot be minted for v20's router, and destroying route injectors by hand would affect every provider on the route, not just ours. | **Decided** — `docs/M0-FINDINGS.md` §7 |
 | M7 | ✅ `/testing` *(devtools deferred)* | `installWebMcpTestHarness()` — in-memory `document.modelContext` honouring duplicate-name rejection, `toolchange`, and `AbortSignal` unregistration | **Done** — 11 tests, driven through the real library rather than poking the harness directly |
 | ~~M8~~ | ✅ `/bridge` (JSON-RPC) | `createWebMcpBridge()` — MCP over JSON-RPC 2.0 in `@mcp-b/transports`-compatible postMessage envelopes; `initialize`/`tools/list`/`tools/call`/`ping` + `list_changed`; origin allowlist required, not defaulted | **Done** — 20 tests plus real-Chrome verification; end-to-end tool call over the wire |

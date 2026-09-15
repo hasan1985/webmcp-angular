@@ -1,5 +1,5 @@
 /*
- * ng-webmcp-compat/testing
+ * webmcp-angular/testing
  *
  * NON-MIGRATING entry point: Angular v22 ships no test harness. Anything imported
  * from here must be replaced by hand when migrating to @angular/core — though the

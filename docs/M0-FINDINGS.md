@@ -279,12 +279,12 @@ since parity imports workspace source.
 
 ### 6.1 A `file:` install breaks secondary entry points — PACKAGING BUG
 
-`npm i file:../ng-webmcp-compat/dist/ng-webmcp-compat` creates a **symlink**.
+`npm i file:../webmcp-angular/dist/webmcp-angular` creates a **symlink**.
 TypeScript resolves symlinks to their real path (`preserveSymlinks: false` by
-default), so from `dist/ng-webmcp-compat/strict/` the import in `strict/index.d.ts`:
+default), so from `dist/webmcp-angular/strict/` the import in `strict/index.d.ts`:
 
 ```ts
-import { JsonSchemaForInference, WebMcpToolDescriptor } from 'ng-webmcp-compat';
+import { JsonSchemaForInference, WebMcpToolDescriptor } from 'webmcp-angular';
 ```
 
 cannot find the package — walking up from the real path never reaches a
