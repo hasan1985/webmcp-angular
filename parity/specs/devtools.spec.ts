@@ -83,6 +83,37 @@ describe('mountWebMcpDevtools', () => {
     expect(text('.status')).toBe('connected');
   });
 
+  it('floats bottom-right by default', async () => {
+    panel = mountWebMcpDevtools();
+    await settle();
+    expect(shadow().querySelector('.root')!.getAttribute('data-pos')).toBe('bottom-right');
+  });
+
+  it('can float in another corner when that one is occupied', async () => {
+    // The default corner collides with anything else anchored there — a chat
+    // sidebar, a support widget.
+    panel = mountWebMcpDevtools({position: 'bottom-left'});
+    await settle();
+    expect(shadow().querySelector('.root')!.getAttribute('data-pos')).toBe('bottom-left');
+    expect(document.querySelector('[data-webmcp-angular-devtools]')!
+      .getAttribute('data-position')).toBe('bottom-left');
+  });
+
+  it('docks inline into a container, and starts open there', async () => {
+    const slot = document.createElement('div');
+    document.body.appendChild(slot);
+
+    panel = mountWebMcpDevtools({position: 'inline', container: slot});
+    await settle();
+
+    expect(slot.querySelector('[data-webmcp-angular-devtools]')).not.toBeNull();
+    expect(shadow().querySelector('.root')!.getAttribute('data-pos')).toBe('inline');
+    // A docked panel collapsed to a pill would leave a hole in the host layout.
+    expect(shadow().querySelector<HTMLElement>('.panel')!.hidden).toBe(false);
+
+    slot.remove();
+  });
+
   it('starts collapsed unless asked to open', async () => {
     panel = mountWebMcpDevtools();
     await settle();

@@ -17,9 +17,29 @@
 
 import type {ModelContext, RegisteredTool} from '@mcp-b/webmcp-types';
 
+/**
+ * Where the panel sits.
+ *
+ * The four corners float above the page. `'inline'` drops the fixed positioning
+ * entirely and lets the panel flow inside its `container` as an ordinary block —
+ * use it when the host app has a layout to give it, so it becomes a real panel
+ * rather than something covering one.
+ */
+export type WebMcpDevtoolsPosition =
+  | 'bottom-right'
+  | 'bottom-left'
+  | 'top-right'
+  | 'top-left'
+  | 'inline';
+
 export interface WebMcpDevtoolsOptions {
   /** Where to attach. Defaults to `document.body`. */
   container?: HTMLElement;
+  /**
+   * Default `'bottom-right'`. Pick another corner when that one is already
+   * occupied, or `'inline'` to dock it into your own layout.
+   */
+  position?: WebMcpDevtoolsPosition;
   /** Start expanded rather than as a collapsed pill. Default `false`. */
   open?: boolean;
   /** Toggle shortcut. Default `true` → Ctrl/Cmd + Shift + M. */
@@ -46,8 +66,16 @@ interface LogEntry {
 }
 
 /**
- * Mounts a floating inspector showing every WebMCP tool the page currently exposes,
- * with their schemas, and lets you invoke them by hand.
+ * Mounts an inspector showing every WebMCP tool the page currently exposes, with
+ * their schemas, and lets you invoke them by hand.
+ *
+ * Floats in the bottom-right corner by default. If your app already uses that
+ * corner — a chat panel, a support widget — pass another corner, or `'inline'`
+ * with a `container` to dock it into your own layout as a real panel:
+ *
+ * ```ts
+ * mountWebMcpDevtools({position: 'inline', container: slotElement});
+ * ```
  *
  * Keep it out of production by loading it dynamically:
  *
@@ -76,11 +104,18 @@ export function mountWebMcpDevtools(options: WebMcpDevtoolsOptions = {}): WebMcp
     return {open: noop, close: noop, refresh: noop, destroy: noop};
   }
 
+  const position = options.position ?? 'bottom-right';
+  const inline = position === 'inline';
+
   const host = document.createElement('div');
   host.setAttribute('data-webmcp-angular-devtools', '');
+  host.setAttribute('data-position', position);
   const shadow = host.attachShadow({mode: 'open'});
   shadow.innerHTML = TEMPLATE;
   (options.container ?? document.body).appendChild(host);
+
+  // Positioning lives on the shadow root so page CSS cannot fight it.
+  shadow.querySelector('.root')!.setAttribute('data-pos', position);
 
   const $ = <T extends HTMLElement>(sel: string) => shadow.querySelector(sel) as T;
 
@@ -252,7 +287,9 @@ export function mountWebMcpDevtools(options: WebMcpDevtoolsOptions = {}): WebMcp
   $<HTMLButtonElement>('.close').addEventListener('click', () => setOpen(false));
   $<HTMLButtonElement>('.refresh').addEventListener('click', () => void refresh());
 
-  setOpen(options.open === true);
+  // An inline panel occupies a slot the host app deliberately gave it; collapsing
+  // it to a pill would leave a hole in the layout, so it starts open.
+  setOpen(options.open ?? inline);
   void refresh();
 
   return {
@@ -345,12 +382,33 @@ function sampleValue(property: Record<string, unknown> | undefined): unknown {
 const TEMPLATE = `
 <style>
   :host { all: initial; }
+  .root[data-pos="inline"] { display: block; height: 100%; }
   * { box-sizing: border-box; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
   .pill, .panel {
-    position: fixed; right: 16px; bottom: 16px; z-index: 2147483647;
+    position: fixed; z-index: 2147483647;
     color: #1c1c1e; background: #fff; border: 1px solid #d8d8d4;
     border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,.16);
   }
+  .root[data-pos="bottom-right"] .pill,
+  .root[data-pos="bottom-right"] .panel { right: 16px; bottom: 16px; }
+  .root[data-pos="bottom-left"]  .pill,
+  .root[data-pos="bottom-left"]  .panel { left: 16px;  bottom: 16px; }
+  .root[data-pos="top-right"]    .pill,
+  .root[data-pos="top-right"]    .panel { right: 16px; top: 16px; }
+  .root[data-pos="top-left"]     .pill,
+  .root[data-pos="top-left"]     .panel { left: 16px;  top: 16px; }
+
+  /* Docked: no fixed positioning, no shadow, fills the slot it was given. */
+  .root[data-pos="inline"] .pill,
+  .root[data-pos="inline"] .panel {
+    position: static; box-shadow: none; border-radius: 0;
+    border-width: 0; z-index: auto;
+  }
+  .root[data-pos="inline"] .panel {
+    width: 100%; height: 100%; max-height: none;
+  }
+  .root[data-pos="inline"] .pill { margin: 12px; }
+
   .pill { padding: 7px 12px; font-size: 12px; cursor: pointer; }
   .panel { width: 380px; max-height: min(70vh, 640px); display: flex; flex-direction: column; }
   header {
@@ -423,6 +481,7 @@ const TEMPLATE = `
     .logwrap { border-top-color: #2e2e34; }
   }
 </style>
+<div class="root">
 <button class="pill" title="Ctrl/Cmd + Shift + M">🔌 WebMCP</button>
 <section class="panel" hidden>
   <header>
@@ -435,4 +494,5 @@ const TEMPLATE = `
   <div class="body"><div class="tools"></div></div>
   <div class="logwrap"><strong>Recent calls</strong><div class="log"></div></div>
 </section>
+</div>
 `;

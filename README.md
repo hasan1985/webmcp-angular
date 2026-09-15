@@ -106,7 +106,9 @@ if (isDevMode()) {
 ```
 
 Live tool list, schemas, arguments prefilled from the schema so running a tool is one
-click, and a call log. It mounts in a shadow root so it cannot restyle — or be
+click, and a call log. It floats bottom-right by default; pass another corner if your
+app already uses that one, or `{position: 'inline', container}` to dock it into your
+own layout as a real panel. It mounts in a shadow root so it cannot restyle — or be
 restyled by — the app it is inspecting. The **dynamic** import keeps it out of your
 initial bundle: measured on a production build it lands in its own lazy chunk
 (~8.6 kB raw, ~3 kB transfer) that is emitted but never downloaded, because
