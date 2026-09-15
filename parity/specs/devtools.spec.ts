@@ -16,7 +16,7 @@ import {declareExperimentalWebMcpTool} from '../../dist/webmcp-angular/fesm2022/
 const settle = () => new Promise((resolve) => setTimeout(resolve, 10));
 
 const shadow = () => {
-  const host = document.querySelector('[data-ng-webmcp-devtools]');
+  const host = document.querySelector('[data-webmcp-angular-devtools]');
   if (!host?.shadowRoot) throw new Error('Devtools host not mounted.');
   return host.shadowRoot;
 };
@@ -54,14 +54,14 @@ describe('mountWebMcpDevtools', () => {
     panel?.destroy();
     panel = undefined;
     harness.uninstall();
-    document.querySelectorAll('[data-ng-webmcp-devtools]').forEach((n) => n.remove());
+    document.querySelectorAll('[data-webmcp-angular-devtools]').forEach((n) => n.remove());
   });
 
   it('mounts into a shadow root, so app styles cannot reach it', async () => {
     panel = mountWebMcpDevtools();
     await settle();
 
-    const host = document.querySelector('[data-ng-webmcp-devtools]');
+    const host = document.querySelector('[data-webmcp-angular-devtools]');
     expect(host).not.toBeNull();
     expect(host!.shadowRoot).not.toBeNull();
     // Nothing leaks into the light DOM beyond the single host element.
@@ -270,11 +270,11 @@ describe('mountWebMcpDevtools', () => {
   it('removes the host and its listeners on destroy', async () => {
     panel = mountWebMcpDevtools({open: true});
     await settle();
-    expect(document.querySelector('[data-ng-webmcp-devtools]')).not.toBeNull();
+    expect(document.querySelector('[data-webmcp-angular-devtools]')).not.toBeNull();
 
     panel.destroy();
     panel = undefined;
-    expect(document.querySelector('[data-ng-webmcp-devtools]')).toBeNull();
+    expect(document.querySelector('[data-webmcp-angular-devtools]')).toBeNull();
 
     // A toolchange after destroy must not throw from a stale listener.
     document.dispatchEvent(new Event('toolchange'));

@@ -273,7 +273,7 @@ document.modelContext → navigator.modelContext → polyfill → no-op
 
 ## 6. Findings from consuming the built package (playground, Chrome)
 
-From building `../ng-webmcp-playground` against the packed tarball and running it in
+From building `../webmcp-angular-playground` against the packed tarball and running it in
 a real browser. These are exactly the class of defect the parity suite cannot reach,
 since parity imports workspace source.
 
@@ -407,7 +407,7 @@ Angular 22, and `withExperimentalAutoCleanupInjectors()` is exactly what fixes i
 
 The documented alternative is `declareExperimentalWebMcpTool()` in the routed
 component, which is proven above to clean up correctly on **every** supported
-version, and is what `ng-webmcp-playground/src/app/notes/notes.page.ts` demonstrates.
+version, and is what `webmcp-angular-playground/src/app/notes/notes.page.ts` demonstrates.
 This is a real limitation of the backport and is called out as such rather than
 papered over.
 

@@ -73,7 +73,7 @@ const next = () => ++idCounter;
  * faithful MessageEvent instead of using postMessage for the client-to-server
  * direction — compensating for the test environment, not weakening the check.
  *
- * The real-browser behaviour is verified separately in ng-webmcp-playground.
+ * The real-browser behaviour is verified separately in webmcp-angular-playground.
  */
 function postToServer(data: unknown, origin = window.location.origin): void {
   window.dispatchEvent(new MessageEvent('message', {data, origin, source: window}));

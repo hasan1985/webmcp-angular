@@ -77,7 +77,7 @@ export function mountWebMcpDevtools(options: WebMcpDevtoolsOptions = {}): WebMcp
   }
 
   const host = document.createElement('div');
-  host.setAttribute('data-ng-webmcp-devtools', '');
+  host.setAttribute('data-webmcp-angular-devtools', '');
   const shadow = host.attachShadow({mode: 'open'});
   shadow.innerHTML = TEMPLATE;
   (options.container ?? document.body).appendChild(host);

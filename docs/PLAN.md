@@ -1,4 +1,4 @@
-# ng-webmcp-kit — Requirements & Implementation Plan
+# webmcp-angular — Requirements & Implementation Plan
 
 > An **API-compatible backport of Angular v22's experimental WebMCP support** for
 > Angular < 22. Same exported names, same signatures, same semantics — so migrating
@@ -13,7 +13,7 @@
 **Everything in this package exists to be deleted.**
 
 The success criterion is not "best Angular WebMCP library." It is: *the day the app
-reaches Angular 22, swapping `ng-webmcp-kit` for `@angular/core` changes no
+reaches Angular 22, swapping `webmcp-angular` for `@angular/core` changes no
 application code except imports.*
 
 That single rule decides every open question from the previous draft:
@@ -206,8 +206,8 @@ Forward-compatible: if upstream fixes #70125, the helper degrades to a no-op.
 - FR-4.2 Guarantee no double registration when the app mixes our imports and core imports during migration.
 
 **FR-5 — Migration tooling**
-- FR-5.1 `ng generate ng-webmcp-kit:migrate` — rewrites imports from `ng-webmcp-kit` to `@angular/core`, removes the dependency, reports anything from a non-core entry point that needs manual attention.
-- FR-5.2 `ng add ng-webmcp-kit` — wires providers into `app.config.ts`.
+- FR-5.1 `ng generate webmcp-angular:migrate` — rewrites imports from `webmcp-angular` to `@angular/core`, removes the dependency, reports anything from a non-core entry point that needs manual attention.
+- FR-5.2 `ng add webmcp-angular` — wires providers into `app.config.ts`.
 
 **FR-6 — Optional, explicitly non-migrating entry points** *(each documented as "you will have to remove this at v22")*
 - FR-6.1 `/strict` — the `webMcpTool()` inference helper (§2.4).
@@ -242,7 +242,7 @@ layered on top — not here.
         │
         ▼
 ┌───────────────────────────────────────────────────────────┐
-│ ng-webmcp-kit  (core entry point)                         │
+│ webmcp-angular  (core entry point)                         │
 │   declareExperimentalWebMcpTool / provideExperimentalWebMcpTools │
 │   ┌─────────────────────────────────────────────────┐     │
 │   │ CoreDelegationGuard                              │     │
@@ -272,7 +272,7 @@ lifecycle story. Because the spec has no `unregisterTool`, and Angular's teardow
 
 ```ts
 // app.config.ts
-import { provideExperimentalWebMcpTools } from 'ng-webmcp-kit';  // ← only line that changes at v22
+import { provideExperimentalWebMcpTools } from 'webmcp-angular';  // ← only line that changes at v22
 
 bootstrapApplication(App, {
   providers: [
@@ -322,9 +322,9 @@ export class CartService {
 ## 5. Package layout
 
 ```
-ng-webmcp-kit/
+webmcp-angular/
   projects/kit/
-    src/                    core — v22-identical surface only   → ng-webmcp-kit
+    src/                    core — v22-identical surface only   → webmcp-angular
     src/strict/             webMcpTool() inference helper       → /strict
     src/polyfill/           installWebMcpPolyfill()             → /polyfill
     src/bridge/             JSON-RPC / postMessage transport    → /bridge
@@ -396,7 +396,7 @@ atomically so the mixed state never persists.
 ## 8. Remaining decisions
 
 1. **Minimum Angular version.** Recommend **19** — `provideEnvironmentInitializer`, stable `DestroyRef`, stable signals, no shims needed. Supporting 17/18 costs the FR-2.1 shim and two more CI legs. What version is the project on today?
-2. **Package name.** `ng-webmcp-kit` is a placeholder; something like `ng-webmcp-backport` or `@<yourorg>/webmcp-compat` states the intent better. Publishing under your own scope avoids collision with the existing `ng-webmcp`.
+2. ~~**Package name.**~~ ✅ Settled: **`webmcp-angular`**. An `ng-` prefix reads as *official Angular* — it is the CLI's prefix and sits beside the `@angular/*` scope — and this package deliberately mimics an `@angular/core` API, so it could be mistaken for something the Angular team shipped. Framework-as-suffix reads "WebMCP, for Angular" instead. `-compat` was dropped because `/bridge` has no v22 equivalent and may outlive the migration.
 3. **`/bridge` (JSON-RPC) — in v1 or defer?** Deferring to M8 keeps the first release tight; it's the only feature with no v22 equivalent, so it's also the strongest reason for the package to outlive the migration.
 4. **Route-level tools pre-v22** — attempt the injector-cleanup shim, or ship only the documented component-scoped pattern? The shim is the riskiest code in the plan.
 

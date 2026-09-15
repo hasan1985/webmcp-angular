@@ -52,7 +52,7 @@ Additive ideas live in separate, clearly-marked entry points that you opt into k
 ✔ 24/24  ours + @angular/core @ Angular 22
 ```
 
-Verified in a real browser via the sibling [`ng-webmcp-playground`](../ng-webmcp-playground):
+Verified in a real browser via the sibling [`webmcp-angular-playground`](../webmcp-angular-playground):
 tools register, execute, and unregister on navigation. Hardened for server rendering and
 for browsers with no WebMCP at all — `npm run check:packaging` packs the library, installs
 the **tarball** into a real Angular SSR app and prerenders it.
@@ -143,7 +143,7 @@ npx ng build webmcp-angular     # builds all 5 entry points to dist/
 npm run verify                    # everything: .d.ts diff, spec suite on Angular 20/21/22,
                                   # SSR + unsupported-browser specs, tarball/prerender check
 npm run check:packaging           # just the tarball install + SSR prerender
-# the showcase app is a sibling repo: ../ng-webmcp-playground
+# the showcase app is a sibling repo: ../webmcp-angular-playground
 ```
 
 Native WebMCP currently requires Chromium with `--enable-features=WebMCP`. Without it the library degrades to a no-op with one dev-mode warning — it never throws.
