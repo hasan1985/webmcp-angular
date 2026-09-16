@@ -170,6 +170,59 @@ the extension and the probe; there is no lighter path. And do not add a page-sid
 beacon expecting anyone to hear it: it helps only if agents agree to listen, and no
 agreement exists.
 
+### Session start, for an agent you brought in
+
+The two agents that are *not* the browser have to find WebMCP for themselves. Here
+is what each does at the start of a session — and where the knowledge of
+`getTools()` actually comes from.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant User
+    participant Harness as Brought-in agent (harness)
+    participant Page as Page · document.modelContext
+    participant Model
+
+    Note over Page: Tools already registered — diagram 1.
+
+    alt in-page chat — you wrote it into the page
+        User->>Harness: starts a new chat session
+        Harness->>Page: is document.modelContext defined?
+        Page-->>Harness: yes
+        Note over Harness: Calls getTools() because its author<br/>wrote it to. This is code, not a discovery.
+        Harness->>Page: getTools()
+        Page-->>Harness: [ get_board, make_move, … ]
+        Harness->>Model: first request: system prompt + tools
+    else extension or external client — injected by the browser, not invited by the page
+        User->>Harness: installed the extension, once, earlier
+        Note over Harness,Page: User navigates to the page.<br/>The browser injects the content script.
+        Harness->>Page: postMessage "mcp-check-ready"
+        Note over Harness,Page: It runs in a separate world from page scripts,<br/>so it asks over postMessage instead of touching the object.
+        Page-->>Harness: "mcp-server-ready" — the bridge answered
+        Harness->>Page: tools/list (JSON-RPC)
+        Note over Page: The bridge calls getTools() on its behalf.
+        Page-->>Harness: { tools: [ … ] }
+        Harness->>Model: first request: system prompt + tools
+    end
+
+    Note over Model: The first moment the model knows any tools exist.
+```
+
+Two things this makes concrete:
+
+- **Nothing learns about `getTools()` at runtime.** In both branches the harness calls
+  it because a person wrote that line. The only facts discovered live are *is
+  `document.modelContext` present* (steps 2–3 / 5–6) and *what is on it* (steps 4 /
+  7). The model, at step 8 / 10, is simply handed the result.
+- **Each new session repeats this from the top.** A new chat means a new
+  conversation and an empty history, so the harness feature-detects and reads the
+  list again — then keeps reading it once per turn, per the cadence section below.
+
+The extension branch is the one the [gap above](#how-the-agent-got-here--and-where-the-design-gap-is)
+is about. Every step in it before `mcp-check-ready` is the user's doing and the
+browser's, not the page's: the page had no way to ask for any of it.
+
 ### The same arc, for the three kinds of agent
 
 Who plays the *Agent* lane changes where the trigger comes from, but not the shape:
