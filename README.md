@@ -89,6 +89,13 @@ WebMCP is a [W3C Community Group draft][spec] and Angular's support is
 `@experimental` — the API may change outside a major version, and already has twice.
 This package is `0.x` and tracks it. Pin the version.
 
+The draft is also **contested between engines**: Chromium is implementing it, Mozilla
+recorded [neutral][moz], and WebKit recorded [oppose][wk] with concerns spanning
+privacy, security, API design and the venue itself. In practice that makes this a
+Chromium-plus-polyfill bet rather than a bet on a future standard — which is why the
+polyfill is a first-class step rather than a stopgap.
+[The full analysis](./docs/architecture/08-will-this-be-standardised.md).
+
 A parity suite runs the same spec against this implementation and against
 `@angular/core` v22, across an Angular 20/21/22 matrix, plus a `.d.ts` diff — weekly,
 so upstream drift surfaces on a Monday rather than mid-migration.
@@ -119,3 +126,5 @@ MIT
 [ng-webmcp]: https://angular.dev/ai/webmcp
 [spec]: https://webmachinelearning.github.io/webmcp/
 [issue]: https://github.com/angular/angular/issues/70125
+[moz]: https://github.com/mozilla/standards-positions/issues/1412
+[wk]: https://github.com/WebKit/standards-positions/issues/670

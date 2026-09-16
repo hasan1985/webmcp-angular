@@ -44,6 +44,7 @@ The agent never touches the DOM. It calls a function you wrote.
 | 5 | [Getting tools out of the page](./05-transports.md) | Native, polyfill, and the JSON-RPC bridge to desktop MCP clients |
 | 6 | [What bites you](./06-what-bites-you.md) | Nine things measured the hard way, with the evidence |
 | 7 | [The full sequence](./07-lifecycle-sequence.md) | Every exchange on one timeline — page load, calls, navigation, cancellation, teardown |
+| 8 | [Will this be standardised?](./08-will-this-be-standardised.md) | Where the three engines actually stand, and what it means for code you write today |
 
 If you only read two, read **2** and **6**. If you prefer to see the whole thing at
 once before reading any of it, start with **7**.
@@ -72,3 +73,8 @@ WebMCP is a **W3C Community Group draft**, and Angular's support is marked
 `@experimental` — the API may change outside a major version. The shape taught here
 is accurate as of `@angular/core@22.1.6` and Chrome 150–154. Chapter 6 lists the
 places it has already moved.
+
+It is also contested: Chromium is implementing, Mozilla is **neutral**, and WebKit has
+formally recorded **oppose**. [Chapter 8](./08-will-this-be-standardised.md) works
+through what that means for code you write today — short version: this package does
+not depend on the outcome, but you should know the odds before you lean on it.

@@ -49,8 +49,14 @@ WebMCP is a [W3C Community Group draft][spec] and Angular's support is marked
 `@experimental` — the API may change outside a major version, and it already has
 twice. This package is `0.x` and tracks it.
 
-What that means for you in practice: pin the version, and expect the odd breaking
-change in a minor. The [architecture course's last chapter](../architecture/06-what-bites-you.md)
-lists where the ground has already moved.
+It is also contested between browser engines — Chromium implementing, Mozilla
+neutral, WebKit opposed — which makes this a Chromium-plus-polyfill proposition
+rather than a bet on a future standard. See
+[will this be standardised?](../architecture/08-will-this-be-standardised.md).
+
+What that means for you in practice: pin the version, expect the odd breaking change
+in a minor, and keep tools as thin wrappers over services that know nothing about
+WebMCP — then you can walk away from the layer without touching your app.
+[Where the ground has already moved](../architecture/06-what-bites-you.md).
 
 [spec]: https://webmachinelearning.github.io/webmcp/
