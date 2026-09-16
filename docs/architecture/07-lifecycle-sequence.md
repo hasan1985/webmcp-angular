@@ -12,7 +12,7 @@ timeline, which is usually what you need when something happens in the wrong ord
 
 | | |
 |---|---|
-| **Agent** | whatever is calling your tools: the browser's own agent, an in-page chat, or an external MCP client ([diagram 2](#2-a-user-asks-the-agent-to-do-something)) |
+| **Agent** | whatever is calling your tools: the browser's own agent, an in-page chat, or an external MCP client. Really a *harness* plus a *model* — only the harness touches the page, and [diagram 2](#2-a-user-asks-the-agent-to-do-something) splits them |
 | **modelContext** | `document.modelContext` — native or polyfill |
 | **webmcp-angular** | `declareWebMcpTool` / `provideWebMcpTools` and the adapter |
 | **Injector** | the Angular injector that owns a tool's lifetime |
@@ -66,29 +66,49 @@ Here is the whole arc, end to end:
 sequenceDiagram
     autonumber
     participant User
-    participant Agent
+    participant Harness as Agent harness
+    participant Model
     participant MC as document.modelContext
     participant App as Your app
 
     Note over MC,App: Tools registered during bootstrap — diagram 1.
 
-    User->>Agent: "add two blue shirts to my cart"
-    Note over Agent: Already attached to this page —<br/>see "How the agent got here" below.
-    Agent->>MC: getTools()
-    MC-->>Agent: [ search_products, add_to_cart, get_cart, … ]
-    Note over Agent: Picks by name + description.<br/>It cannot see your UI.
+    User->>Harness: "add two blue shirts to my cart"
+    Harness->>MC: getTools()
+    MC-->>Harness: [ search_products, add_to_cart, get_cart, … ]
+    Harness->>Model: the request, plus the tool list
 
-    Agent->>MC: executeTool(add_to_cart, {"sku":"SHIRT-BL-M","qty":2})
+    Note over Model: Picks by name + description.<br/>It never sees the page.
+    Model-->>Harness: call add_to_cart({"sku":"SHIRT-BL-M","qty":2})
+
+    Harness->>MC: executeTool(add_to_cart, …)
     MC->>App: execute(args, { signal })
     App-->>MC: "Added 2 × SHIRT-BL-M. Cart now has 2 items."
-    MC-->>Agent: (same text)
+    MC-->>Harness: (same text)
 
-    Agent->>User: "Added two blue shirts — your cart has 2 items."
+    Harness->>Model: tool result
+    Model-->>Harness: "Added two blue shirts — your cart has 2 items."
+    Harness->>User: (same)
 ```
 
-Steps 3–4 are the discovery. They happen **because of step 1**, not on a schedule.
+### The two halves of an "agent"
 
-Everything the agent knows about your app is the text you wrote — step 5 is a choice
+Elsewhere in this chapter *Agent* is one lane. Here it is split, because this is
+exactly where the confusion lives:
+
+- **The harness** is ordinary code — a browser feature, your chat component, an MCP
+  client. It is the only half that touches `document.modelContext`: it calls
+  `getTools()` (step 2) and `executeTool()` (step 6).
+- **The model** never sees the page and never calls anything. It is *handed* the tool
+  list (step 4) and replies with a name and arguments (step 5). Tool-calling is a
+  feature of the model API, not of WebMCP.
+
+So "how does the model know to call `getTools()`?" has no answer — it never does. The
+harness reads the list and passes it in.
+
+Step 2 happens **because of step 1**, a user asking for something, not on a schedule.
+
+Everything the model knows about your app is the text you wrote — step 5 is a choice
 made purely from `name` and `description`, which is why
 [descriptions matter](../guide/02-writing-tools.md#write-descriptions-for-someone-who-cant-see-your-ui).
 
