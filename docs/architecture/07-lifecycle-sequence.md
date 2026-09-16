@@ -73,7 +73,7 @@ sequenceDiagram
     Note over MC,App: Tools registered during bootstrap — diagram 1.
 
     User->>Agent: "add two blue shirts to my cart"
-    Note over Agent: Needs to know what this page can do.
+    Note over Agent: Already attached to this page —<br/>see "How the agent got here" below.
     Agent->>MC: getTools()
     MC-->>Agent: [ search_products, add_to_cart, get_cart, … ]
     Note over Agent: Picks by name + description.<br/>It cannot see your UI.
@@ -93,6 +93,29 @@ made purely from `name` and `description`, which is why
 [descriptions matter](../guide/02-writing-tools.md#write-descriptions-for-someone-who-cant-see-your-ui).
 
 Steps 6–9 are the tool call itself. [Diagram 3](#3-inside-a-tool-call) zooms into them.
+
+### How the agent got here
+
+Step 2 is doing real work, and the spec does not define it.
+
+WebMCP describes registration and discovery, then says *"an agent connected to the
+page queries the browser to discover the active list of tools."* **How it came to be
+connected is out of scope.** There is no meta tag, no HTTP header, no manifest, no
+well-known URL — nothing a page can publish to announce "I have tools."
+
+In practice each kind of agent solves it differently:
+
+| | How it knows |
+|---|---|
+| **The browser's built-in agent** | Nothing to discover — it *is* the browser. `registerTool()` writes into an object the browser owns, so it sees your tools the moment you register them, and `toolchange` when they change. |
+| **In-page code** — a chat panel, the inspector | Feature detection: does `document.modelContext` exist? That is all `isWebMcpSupported()` does. |
+| **An extension or external MCP client** | A content script probes `document.modelContext` in the page, and/or performs a handshake the *transport* defines — the bridge answers `mcp-check-ready` with `mcp-server-ready` ([diagram 7](#7-reaching-an-agent-outside-the-page)). None of that is in the WebMCP spec; it is `@mcp-b`'s convention. |
+
+So the answer to "how does an agent know this page is WebMCP-enabled" is: **the
+browser already knows, and everyone else asks.**
+
+This matters when you are building the agent side. If you are only *exposing* tools,
+it costs you nothing — you register, and whoever is looking will find them.
 
 ### The same arc, for the three kinds of agent
 

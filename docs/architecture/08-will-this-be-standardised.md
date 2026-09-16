@@ -129,6 +129,13 @@ Both landed inside a single year, on a feature still in origin trial. And the
 explainer's own open questions — multimodal I/O, streaming, navigation during a call,
 output schemas — are not small.
 
+Nor is what the spec simply leaves out. There is **no discovery mechanism**: no meta
+tag, header, manifest or well-known URL by which a page announces it has tools. The
+explainer treats "an agent connected to the page" as a prerequisite and does not say
+how the connection is made ([chapter 7](./07-lifecycle-sequence.md#how-the-agent-got-here)).
+That is fine for a browser's own agent, which owns the registry — and is why every
+other consumer has had to invent its own probe.
+
 See [chapter 6](./06-what-bites-you.md) for what those changes cost in practice.
 
 ---
