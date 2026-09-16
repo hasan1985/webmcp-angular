@@ -43,6 +43,7 @@ including the polyfill step you can't skip.
 |---|---|
 | **[Using webmcp-angular](./docs/guide/README.md)** | Install, write tools, scope them, test them, ship them |
 | **[API reference](./docs/guide/api-reference.md)** | Every export, by entry point |
+| **[Status and open threads](./docs/STATUS.md)** | Current state, how to run the demo end to end, what is unfinished |
 | **[How WebMCP works](./docs/architecture/README.md)** | A short course on the browser API and the Angular integration — plus a [diagrammed visual guide](https://claude.ai/code/artifact/190f4737-c9ea-4892-aa2b-f9c854716f83) |
 
 There's also a [runnable sample app](../webmcp-angular-playground) — tic-tac-toe an
@@ -115,6 +116,7 @@ parity/                      the compatibility gate — spec suite + .d.ts diff
 fixtures/ssr-consumer/       real Angular SSR app, prerendered against the tarball
 docs/guide/                  how to use it
 docs/architecture/           how it works
+docs/STATUS.md               working state and open threads
 docs/PLAN.md                 requirements, milestones, risks
 docs/M0-FINDINGS.md          verified findings, with evidence
 ```
