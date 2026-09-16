@@ -12,7 +12,7 @@ timeline, which is usually what you need when something happens in the wrong ord
 
 | | |
 |---|---|
-| **Agent** | whatever is calling your tools — the browser's own agent, an in-page chat, or an external MCP client. [Diagram 2](#2-an-agent-looks-around--and-your-app-is-not-told) separates the three, because they reach you differently |
+| **Agent** | whatever is calling your tools: the browser's own agent, an in-page chat, or an external MCP client ([diagram 2](#2-how-an-agent-discovers-the-tools)) |
 | **modelContext** | `document.modelContext` — native or polyfill |
 | **webmcp-angular** | `declareWebMcpTool` / `provideWebMcpTools` and the adapter |
 | **Injector** | the Angular injector that owns a tool's lifetime |
@@ -55,74 +55,44 @@ sequenceDiagram
 finds no `document.modelContext`, returns early, and says nothing. You get a working
 app with no tools and no error. That is the single most common setup mistake.
 
-## 2. An agent looks around — and your app is not told
+## 2. How an agent discovers the tools
 
-This is the diagram people misread, so it is drawn to show what *doesn't* happen.
+Registration (diagram 1) puts your tools on `document.modelContext`. An agent reads
+them from there.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant App as Your app
     participant MC as document.modelContext
     participant Agent
 
-    Note over App: Registered its tools during bootstrap<br/>(diagram 1), then went back to being an app.
+    Note over MC: Holds the tools registered during bootstrap.
 
     Agent->>MC: getTools()
     MC-->>Agent: [{ name, description, inputSchema }, …]
-
-    Note over App,MC: Nothing reaches the app. No arrow, no event,<br/>no callback — by design.
-    Note over Agent: Chooses using name + description only.<br/>It cannot see your UI.
+    Note over Agent: Picks one using name + description.<br/>It cannot see your UI.
+    Agent->>MC: executeTool(chosen, args)
 ```
 
-**There is no "agent arrived" event.** The entire `ModelContext` surface is three
-members:
+Everything the agent knows about your app is the text you wrote, which is why
+[descriptions matter](../guide/02-writing-tools.md#write-descriptions-for-someone-who-cant-see-your-ui).
 
-```ts
-registerTool(…)    // you → browser
-getTools(…)        // you → browser
-ontoolchange       // browser → you, and only about YOUR tool list changing
-```
+### When the read happens
 
-`toolchange` fires when your own tools come and go. It says nothing about agents.
-There is no `onconnect`, no session concept, nothing to subscribe to.
+Three kinds of agent sit in that lane, and they read at different moments:
 
-So a page cannot know an agent is present. The earliest possible evidence is a tool
-actually running:
-
-```ts
-execute: (args) => {
-  // The first moment you can know an agent is here at all.
-  inject(Telemetry).agentSeen();
-  return inject(CartService).add(args.sku, args.qty);
-}
-```
-
-**This is deliberate, and contested.** Withholding an arrival signal limits how much a
-site can behave differently for agents. It is also the exact ground of WebKit's
-objection — that tool invocation is *itself* an observable, so the withholding does
-not really achieve the goal ([chapter 8](./08-will-this-be-standardised.md)).
-
-### Who is the "Agent" in that diagram?
-
-Three different things sit in that lane, and only one of them is outside your control:
-
-| | Where it runs | How it reaches `getTools()` |
+| | Where it runs | When it calls `getTools()` |
 |---|---|---|
-| **The browser's built-in agent** | in the browser, outside the page | directly; you never see it |
-| **In-page code** — a chat panel, the inspector | in your page | calls `document.modelContext` itself; needs `executeTool`, which is a Chromium extension the polyfill also supplies |
-| **An external MCP client** — Claude Desktop, Cursor | another process | through [the bridge](./07-lifecycle-sequence.md#7-reaching-an-agent-outside-the-page), diagram 7 |
+| **The browser's built-in agent** | outside the page | on its own schedule — typically when the user asks it to do something |
+| **In-page code** — a chat panel, the inspector | in your page | when you call it; once per user turn is the right cadence |
+| **An external MCP client** — Claude Desktop, Cursor | another process | on `tools/list` through [the bridge](#7-reaching-an-agent-outside-the-page), then again on `notifications/tools/list_changed` |
 
-The first is invisible to you. The second and third are code you wrote, so you *do*
-know when they act — but that is your own bookkeeping, not something WebMCP tells you.
+Your code is not notified when a read happens. The first thing your app observes is a
+tool actually executing — diagram 3.
 
-### How often does the list need sending?
+### An in-page chat, turn by turn
 
-Only relevant for the second and third rows; the browser's own agent calls `getTools()`
-whenever it likes.
-
-For an in-page chat talking to an LLM API, the answer is **once per user turn** — not
-once per session, and not once per tool call.
+This is the case you control, so it is worth seeing in full:
 
 ```mermaid
 sequenceDiagram
@@ -136,7 +106,7 @@ sequenceDiagram
     Chat->>MC: getTools()
     MC-->>Chat: the list, as it is right now
     Chat->>LLM: messages + tools
-    Note over Chat,LLM: The Messages API is stateless:<br/>tools travel on EVERY request.
+    Note over Chat,LLM: The Messages API is stateless,<br/>so tools travel on every request.
     LLM-->>Chat: tool_use
     Chat->>MC: executeTool(…)
     MC-->>Chat: result
@@ -144,13 +114,24 @@ sequenceDiagram
     LLM-->>Chat: final answer
 ```
 
-Per turn, because the list is live — the user may have navigated since the last
-message and gained or lost tools (diagram 5). Not per call within a turn, because it
-cannot change mid-turn, so re-fetching would be waste.
+Fetch **once per user turn**: the list is live, and the user may have navigated since
+the last message and gained or lost tools (diagram 5). Fetching again between the
+tool calls *within* a turn is waste — it cannot change mid-turn.
 
-An external MCP client differs again: it fetches once on `tools/list` and relies on
-`notifications/tools/list_changed` to know when to refetch — which is why the bridge
-advertises `listChanged: true` and pushes that notification.
+### Keeping a long-lived consumer current
+
+A consumer that holds the list — a panel, a connected MCP client — listens for
+`toolchange` and refetches:
+
+```ts
+const refresh = () => { /* getTools() again */ };
+
+document.addEventListener('toolchange', refresh);
+document.modelContext?.addEventListener?.('toolchange', refresh);   // ← both
+```
+
+Listen on both targets. The spec dispatches on the document; the polyfill dispatches
+only on the ModelContext ([chapter 6 §8](./06-what-bites-you.md)).
 
 ## 3. A read-only call
 
