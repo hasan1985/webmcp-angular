@@ -150,7 +150,8 @@ Who plays the *Agent* lane changes where the trigger comes from, but not the sha
 ### Cadence, when you control the agent
 
 An in-page chat is the case you write yourself, so the cadence is your decision.
-**Once per user turn** is the right one:
+**Once per user turn** is the right one — and a chat with a tools on/off toggle skips
+the read entirely when it is off:
 
 ```mermaid
 sequenceDiagram
@@ -161,20 +162,57 @@ sequenceDiagram
     participant LLM as Messages API
 
     User->>Chat: "add two blue shirts"
-    Chat->>MC: getTools()
-    MC-->>Chat: the list, as it is right now
-    Chat->>LLM: messages + tools
-    Note over Chat,LLM: The Messages API is stateless,<br/>so tools travel on every request.
-    LLM-->>Chat: tool_use
-    Chat->>MC: executeTool(…)
-    MC-->>Chat: result
-    Chat->>LLM: messages + tool_result + tools
-    LLM-->>Chat: final answer
+
+    alt tool mode ON
+        Chat->>MC: getTools()
+        MC-->>Chat: the list, as it is right now
+        Chat->>LLM: messages + tools + tool-aware system prompt
+        Note over Chat,LLM: The Messages API is stateless,<br/>so tools travel on every request.
+        LLM-->>Chat: tool_use
+        Chat->>MC: executeTool(…)
+        MC-->>Chat: result
+        Chat->>LLM: messages + tool_result + tools
+        LLM-->>Chat: final answer
+    else tool mode OFF
+        Note over Chat,MC: No read at all — the list is not needed.
+        Chat->>LLM: messages + plain system prompt
+        Note over Chat,LLM: No `tools` key. Omit it rather than<br/>sending an empty array.
+        LLM-->>Chat: answer
+    end
 ```
 
 Per turn, because the list is live: the user may have navigated since their last
 message and gained or lost tools (diagram 5). Not again between the tool calls
 *within* a turn — it cannot change mid-turn, so that would be waste.
+
+> In the `webmcp-angular-playground` sample app this read is wrapped in a helper
+> called `discoverTools()`, which calls `getTools()` and maps the result into the
+> Messages API's `tools` shape. These diagrams name the browser API; your own code
+> will usually name its wrapper instead.
+
+#### Two things move with the toggle, not one
+
+The `tools` key is the obvious half. The **system prompt** is the half people forget:
+leave a tool-aware prompt in place with tools switched off and the model offers to do
+things it cannot, or narrates calls it never made. Swap both together.
+
+What does *not* move is registration. Tools stay on `document.modelContext` either
+way — the toggle governs what your chat sends, not what the page publishes. The
+inspector, the browser's own agent and any connected MCP client keep seeing them. If
+you truly want them gone for everyone, that is a different act: destroy the injectors
+that own them (diagram 8).
+
+#### Switching mid-conversation
+
+Once a turn has run with tools on, the transcript holds `tool_use` and `tool_result`
+blocks. Replaying that history with no `tools` defined leaves the model reading blocks
+it has no schema for, so design the toggle so it cannot arise:
+
+- **Toggle starts a new session** — new conversation, empty history. Simplest, and it
+  matches how people think about a mode switch.
+- **Or keep the conversation** and, when tools are off but the history already
+  contains tool blocks, still send `tools` alongside `tool_choice: {type: 'none'}`.
+  The model cannot call anything, and the transcript stays interpretable.
 
 ### Keeping a long-lived consumer current
 
