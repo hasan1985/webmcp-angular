@@ -114,28 +114,61 @@ made purely from `name` and `description`, which is why
 
 Steps 6–9 are the tool call itself. [Diagram 3](#3-inside-a-tool-call) zooms into them.
 
-### How the agent got here
+### How the agent got here — and where the design gap is
 
-Step 2 is doing real work, and the spec does not define it.
+Step 2 assumes the harness is already attached to the page. The spec does not say how
+that happens. It describes registration and discovery, then: *"an agent connected to
+the page queries the browser to discover the active list of tools."* How it came to be
+connected is out of scope.
 
-WebMCP describes registration and discovery, then says *"an agent connected to the
-page queries the browser to discover the active list of tools."* **How it came to be
-connected is out of scope.** There is no meta tag, no HTTP header, no manifest, no
-well-known URL — nothing a page can publish to announce "I have tools."
+For one of the three agents that is fine. For the other two it is a real gap.
 
-In practice each kind of agent solves it differently:
+**The browser's built-in agent — no gap.** `registerTool()` writes into an object the
+browser owns, so it sees your tools the moment you register them, and `toolchange`
+when they change. Navigation *is* the configuration step: the user opening the page is
+what "adds the server". Nothing to discover.
 
-| | How it knows |
-|---|---|
-| **The browser's built-in agent** | Nothing to discover — it *is* the browser. `registerTool()` writes into an object the browser owns, so it sees your tools the moment you register them, and `toolchange` when they change. |
-| **In-page code** — a chat panel, the inspector | Feature detection: does `document.modelContext` exist? That is all `isWebMcpSupported()` does. |
-| **An extension or external MCP client** | A content script probes `document.modelContext` in the page, and/or performs a handshake the *transport* defines — the bridge answers `mcp-check-ready` with `mcp-server-ready` ([diagram 7](#7-reaching-an-agent-outside-the-page)). None of that is in the WebMCP spec; it is `@mcp-b`'s convention. |
+**In-page code — no gap, trivially.** A chat panel or the inspector feature-detects
+`document.modelContext` (that is all `isWebMcpSupported()` does). You wrote both ends,
+so there is no discovery problem.
 
-So the answer to "how does an agent know this page is WebMCP-enabled" is: **the
-browser already knows, and everyone else asks.**
+**An external agent — Claude Desktop, Cursor, any extension — three things it cannot
+do.**
 
-This matters when you are building the agent side. If you are only *exposing* tools,
-it costs you nothing — you register, and whoever is looking will find them.
+1. **Find the page.** There is no meta tag, HTTP header, manifest or well-known URL a
+   page can publish to say "I have tools." An agent outside the page has no way to
+   know it is worth entering without first executing code inside it.
+
+   MCP has the same runtime hole, but an out-of-band answer — host configuration and
+   the registry ([chapter 8](./08-will-this-be-standardised.md)). WebMCP's only
+   out-of-band answer is navigation, which exists for the browser alone.
+
+2. **Know it is welcome.** Once inside, finding `document.modelContext` proves
+   nothing about intent. `exposedTo` on `registerTool()` scopes by *origin* — it is
+   for cross-origin documents, not for kinds of agent. And with the polyfill
+   installed, `document.modelContext` exists on every page that included it.
+
+   This one is unresolvable in the current design, on purpose: the spec declines to
+   let a page distinguish agents (WebKit's objection is that it should not be able
+   to), and the corollary is that a page cannot scope tools to a class of agent
+   either.
+
+3. **Hear an announcement.** A page can only `postMessage` into its own window. Our
+   bridge broadcasts `mcp-server-ready` once at `start()` and answers
+   `mcp-check-ready` whenever one arrives — so a client that attaches late is fine,
+   *if* it already knows to probe on that channel. Which is problem 1 again.
+
+**What actually happens today:** the user installs a specific extension; it injects a
+content script into pages, probes for `document.modelContext`, and shakes hands on the
+channel `@mcp-b/transports` defines ([diagram 7](#7-reaching-an-agent-outside-the-page)).
+None of that is in the WebMCP spec. It is a workaround the ecosystem built around the
+gap, not a design.
+
+**What this means for you.** If you only *expose* tools, nothing — register them and
+whoever is looking will find them. If you are building an external agent, budget for
+the extension and the probe; there is no lighter path. And do not add a page-side
+beacon expecting anyone to hear it: it helps only if agents agree to listen, and no
+agreement exists.
 
 ### The same arc, for the three kinds of agent
 
