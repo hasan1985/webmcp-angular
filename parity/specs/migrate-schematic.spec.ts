@@ -38,10 +38,10 @@ describe('ng generate webmcp-angular:migrate', () => {
       '/src/app.config.ts',
       [
         `import {ApplicationConfig} from '@angular/core';`,
-        `import {provideExperimentalWebMcpTools} from 'webmcp-angular';`,
+        `import {provideWebMcpTools} from 'webmcp-angular';`,
         ``,
         `export const appConfig: ApplicationConfig = {`,
-        `  providers: [provideExperimentalWebMcpTools([])],`,
+        `  providers: [provideWebMcpTools([])],`,
         `};`,
         ``,
       ].join('\n'),
@@ -50,34 +50,37 @@ describe('ng generate webmcp-angular:migrate', () => {
     const result = await run();
     const after = result.readContent('/src/app.config.ts');
 
-    expect(after).toContain(`import {provideExperimentalWebMcpTools} from '@angular/core';`);
+    // Renamed, aliased back to the name the file already uses, so nothing else moves.
+    expect(after).toContain(
+      `import {provideExperimentalWebMcpTools as provideWebMcpTools} from '@angular/core';`,
+    );
     expect(after).not.toContain('webmcp-angular');
     // Nothing but the specifier may move.
     expect(after).toContain(`import {ApplicationConfig} from '@angular/core';`);
-    expect(after).toContain(`  providers: [provideExperimentalWebMcpTools([])],`);
+    expect(after).toContain(`  providers: [provideWebMcpTools([])],`);
   });
 
   it('preserves type-only imports and aliases verbatim', async () => {
     tree.create(
       '/src/tools.ts',
       [
-        `import {declareExperimentalWebMcpTool, type WebMcpToolDescriptor as Desc} from 'webmcp-angular';`,
+        `import {declareWebMcpTool, type WebMcpToolDescriptor as Desc} from 'webmcp-angular';`,
         `export type T = Desc<{type: 'object'}>;`,
-        `export const d = declareExperimentalWebMcpTool;`,
+        `export const d = declareWebMcpTool;`,
         ``,
       ].join('\n'),
     );
 
     const after = (await run()).readContent('/src/tools.ts');
     expect(after).toContain(
-      `import {declareExperimentalWebMcpTool, type WebMcpToolDescriptor as Desc} from '@angular/core';`,
+      `import {declareExperimentalWebMcpTool as declareWebMcpTool, type WebMcpToolDescriptor as Desc} from '@angular/core';`,
     );
   });
 
   it('removes the dependency from package.json on a clean migration', async () => {
     tree.create(
       '/src/a.ts',
-      `import {declareExperimentalWebMcpTool} from 'webmcp-angular';\nexport const a = declareExperimentalWebMcpTool;\n`,
+      `import {declareWebMcpTool} from 'webmcp-angular';\nexport const a = declareWebMcpTool;\n`,
     );
 
     const after = JSON.parse((await run()).readContent('/package.json'));
@@ -89,7 +92,7 @@ describe('ng generate webmcp-angular:migrate', () => {
     tree.create(
       '/src/tools.ts',
       [
-        `import {provideExperimentalWebMcpTools} from 'webmcp-angular';`,
+        `import {provideWebMcpTools} from 'webmcp-angular';`,
         `import {webMcpTool} from 'webmcp-angular/strict';`,
         `export const t = webMcpTool;`,
         ``,
@@ -100,7 +103,10 @@ describe('ng generate webmcp-angular:migrate', () => {
     const after = result.readContent('/src/tools.ts');
 
     // The core import still migrates…
-    expect(after).toContain(`import {provideExperimentalWebMcpTools} from '@angular/core';`);
+    // Renamed, aliased back to the name the file already uses, so nothing else moves.
+    expect(after).toContain(
+      `import {provideExperimentalWebMcpTools as provideWebMcpTools} from '@angular/core';`,
+    );
     // …but /strict has no @angular/core equivalent, so it is untouched.
     expect(after).toContain(`import {webMcpTool} from 'webmcp-angular/strict';`);
 
@@ -127,7 +133,7 @@ describe('ng generate webmcp-angular:migrate', () => {
   it('does NOT rewrite a namespace import', async () => {
     tree.create(
       '/src/ns.ts',
-      `import * as webmcp from 'webmcp-angular';\nexport const d = webmcp.declareExperimentalWebMcpTool;\n`,
+      `import * as webmcp from 'webmcp-angular';\nexport const d = webmcp.declareWebMcpTool;\n`,
     );
 
     const after = (await run()).readContent('/src/ns.ts');
@@ -146,7 +152,7 @@ describe('ng generate webmcp-angular:migrate', () => {
   });
 
   it('skips node_modules and dist', async () => {
-    const content = `import {declareExperimentalWebMcpTool} from 'webmcp-angular';\n`;
+    const content = `import {declareWebMcpTool} from 'webmcp-angular';\n`;
     tree.create('/node_modules/some-lib/index.ts', content);
     tree.create('/dist/build-output.ts', content);
 
@@ -160,7 +166,7 @@ describe('ng generate webmcp-angular:migrate', () => {
       '/src/mixed.ts',
       [
         `import {Component} from '@angular/core';`,
-        `import {declareExperimentalWebMcpTool} from 'webmcp-angular';`,
+        `import {declareWebMcpTool} from 'webmcp-angular';`,
         `import {installWebMcpPolyfill} from 'webmcp-angular/polyfill';`,
         `import {webMcpTool} from 'webmcp-angular/strict';`,
         ``,
@@ -168,7 +174,9 @@ describe('ng generate webmcp-angular:migrate', () => {
     );
 
     const after = (await run()).readContent('/src/mixed.ts');
-    expect(after).toContain(`import {declareExperimentalWebMcpTool} from '@angular/core';`);
+    expect(after).toContain(
+      `import {declareExperimentalWebMcpTool as declareWebMcpTool} from '@angular/core';`,
+    );
     expect(after).toContain(`from 'webmcp-angular/polyfill';`);
     expect(after).toContain(`from 'webmcp-angular/strict';`);
     expect(after).toContain(`import {Component} from '@angular/core';`);

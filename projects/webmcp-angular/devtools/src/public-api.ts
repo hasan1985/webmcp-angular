@@ -1,7 +1,8 @@
 /*
  * webmcp-angular/devtools
  *
- * NON-MIGRATING entry point: Angular v22 has no equivalent. Development only.
+ * No `@angular/core` equivalent — Angular ships no inspector. Development only, and
+ * independent of which core API you use.
  *
  * ── Design notes ────────────────────────────────────────────────────────────
  *

@@ -16,23 +16,24 @@ don't need both.
 | 3 | [Scoping tools](./03-scoping-tools.md) | App, component and service scope — and the one that leaks |
 | 4 | [Testing](./04-testing.md) | Assert on what your app exposes, with no browser |
 | 5 | [Inspecting and connecting](./05-inspecting-and-connecting.md) | The dev inspector, and reaching Claude Desktop or Cursor |
-| 6 | [Migrating to Angular 22](./06-migrating-to-angular-22.md) | One command, and what it will and won't do for you |
+| 6 | [Switching to Angular's native API](./06-migrating-to-angular-22.md) | If and when you want to — one command, and what it will and won't do |
 | — | [API reference](./api-reference.md) | Every export, by entry point |
 
 ## What this package is
 
-Angular 22 ships experimental WebMCP support in `@angular/core`. This package is an
-**API-compatible backport of it for Angular 20 and 21**, plus a few things Angular
-doesn't provide (a test harness, a dev inspector, a bridge to desktop MCP clients).
+Angular 22 ships WebMCP support in `@angular/core` (as `@experimental`). This package
+brings the same API to **Angular 20 and 21**, plus a few things Angular doesn't
+provide: a test harness, a dev inspector, and a bridge to desktop MCP clients.
 
-The core entry point is signature-identical to v22 on purpose, so migrating is a
-change of import path — and there's [a schematic](./06-migrating-to-angular-22.md)
-that does even that for you.
+The core entry point mirrors Angular's deliberately, so **switching to the native API
+stays an easy option** — [a schematic](./06-migrating-to-angular-22.md) does it for
+you. Whether you ever take it is your call; the entry points Angular has no
+equivalent for are a good reason not to.
 
 ```ts
-import { provideExperimentalWebMcpTools } from 'webmcp-angular';
+import { provideWebMcpTools } from 'webmcp-angular';
 // at Angular 22 ──▶
-import { provideExperimentalWebMcpTools } from '@angular/core';
+import { provideWebMcpTools } from '@angular/core';
 ```
 
 ## Requirements

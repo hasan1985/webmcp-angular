@@ -16,13 +16,18 @@ import * as ts from 'typescript';
 
 const PACKAGE = 'webmcp-angular';
 
-/** Exports that exist in `@angular/core` v22 under the same names. */
-const CORE_SYMBOLS = new Set([
-  'declareExperimentalWebMcpTool',
-  'provideExperimentalWebMcpTools',
-  'WebMcpToolDescriptor',
-  'WebMcpToolExecute',
-  'WebMcpClient',
+/**
+ * Exports with an `@angular/core` v22 counterpart, mapped to the name Angular uses.
+ *
+ * The types keep their names; the two functions gain Angular's `Experimental`
+ * prefix, which this package deliberately drops.
+ */
+const CORE_SYMBOLS = new Map([
+  ['declareWebMcpTool', 'declareExperimentalWebMcpTool'],
+  ['provideWebMcpTools', 'provideExperimentalWebMcpTools'],
+  ['WebMcpToolDescriptor', 'WebMcpToolDescriptor'],
+  ['WebMcpToolExecute', 'WebMcpToolExecute'],
+  ['WebMcpClient', 'WebMcpClient'],
 ]);
 
 /**
@@ -117,13 +122,36 @@ export function migrate(options: {path?: string; dryRun?: boolean} = {}): Rule {
           continue;
         }
 
-        // Every symbol in this import exists in @angular/core under the same name:
-        // change the module specifier and nothing else.
+        // Every symbol here has an @angular/core counterpart. Rewrite the module
+        // specifier, and rename the two functions Angular prefixes with
+        // `Experimental`.
+        //
+        // A renamed symbol keeps an alias to the name the file already uses
+        // (`declareExperimentalWebMcpTool as declareWebMcpTool`), so only the import
+        // line changes. Renaming every usage would mean rewriting identifiers across
+        // the file, with shadowing to reason about — more risk than this schematic
+        // should take without being asked.
         edits.push({
           start: statement.moduleSpecifier.getStart(),
           end: statement.moduleSpecifier.getEnd(),
           text: `'@angular/core'`,
         });
+
+        for (const element of elementsOf(statement)) {
+          const imported = (element.propertyName ?? element.name).text;
+          const angularName = CORE_SYMBOLS.get(imported);
+          if (!angularName || angularName === imported) continue;
+
+          const local = element.name.text;
+          edits.push({
+            start: element.getStart(),
+            end: element.getEnd(),
+            // `x as y` keeps the local name; a bare import needs an alias adding.
+            text: element.propertyName
+              ? `${angularName} as ${local}`
+              : `${angularName} as ${local}`,
+          });
+        }
       }
 
       if (edits.length === 0) return;
@@ -151,6 +179,12 @@ export function migrate(options: {path?: string; dryRun?: boolean} = {}): Rule {
 
 interface NamedImport {
   imported: string;
+}
+
+/** The named bindings of an import, or an empty list for other import forms. */
+function elementsOf(statement: ts.ImportDeclaration): readonly ts.ImportSpecifier[] {
+  const bindings = statement.importClause?.namedBindings;
+  return bindings && ts.isNamedImports(bindings) ? bindings.elements : [];
 }
 
 /** Returns the named bindings, or null for a default/namespace import. */

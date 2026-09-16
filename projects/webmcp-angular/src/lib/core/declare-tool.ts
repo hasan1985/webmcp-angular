@@ -19,7 +19,7 @@ import type {JsonSchemaForInference, WebMcpToolDescriptor} from './tool-types';
  * the associated injection context is destroyed.
  *
  * The `tool.execute` function is invoked in the injection context of the provided
- * {@link Injector}, or the injection context of `declareExperimentalWebMcpTool` itself.
+ * {@link Injector}, or the injection context of `declareWebMcpTool` itself.
  *
  * @param tool The tool to register and execute when invoked by an AI agent.
  * @param injector Optional {@link Injector} which will automatically unregister the
@@ -28,9 +28,9 @@ import type {JsonSchemaForInference, WebMcpToolDescriptor} from './tool-types';
  *     argument provided.
  * @experimental
  *
- * MIRRORS: `@angular/core` v22 `declareExperimentalWebMcpTool`, line for line.
+ * MIRRORS: `@angular/core` v22 `declareWebMcpTool`, line for line.
  */
-export async function declareExperimentalWebMcpTool<
+export async function declareWebMcpTool<
   const InputSchema extends JsonSchemaForInference,
 >(tool: WebMcpToolDescriptor<InputSchema>, injector?: Injector): Promise<void> {
   // v22 guards with the `ngServerMode` build global. That global is not reliably
@@ -47,7 +47,7 @@ export async function declareExperimentalWebMcpTool<
 
   if (typeof ngDevMode !== 'undefined' && ngDevMode) {
     if (!injector) {
-      assertInInjectionContext(declareExperimentalWebMcpTool);
+      assertInInjectionContext(declareWebMcpTool);
     }
   }
 
@@ -88,17 +88,17 @@ export async function declareExperimentalWebMcpTool<
  * @returns An {@link EnvironmentProviders} for `bootstrapApplication` or route providers.
  * @experimental
  *
- * MIRRORS: `@angular/core` v22 `provideExperimentalWebMcpTools`, including the
+ * MIRRORS: `@angular/core` v22 `provideWebMcpTools`, including the
  * un-awaited call below — a duplicate tool name surfaces as an unhandled promise
  * rejection, exactly as it does upstream. See `docs/M0-FINDINGS.md` §2.4.
  */
-export function provideExperimentalWebMcpTools<
+export function provideWebMcpTools<
   const InputSchema extends JsonSchemaForInference,
 >(tools: WebMcpToolDescriptor<InputSchema>[]): EnvironmentProviders {
   return makeEnvironmentProviders([
     provideEnvironmentInitializer(() => {
       for (const tool of tools) {
-        declareExperimentalWebMcpTool(tool);
+        declareWebMcpTool(tool);
       }
     }),
   ]);

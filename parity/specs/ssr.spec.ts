@@ -5,9 +5,9 @@ import {Injector, createEnvironmentInjector, type EnvironmentInjector} from '@an
 // covers is a module-scope `document` touch that only ng-packagr's output would
 // expose, so testing source here would test the wrong thing.
 import {
-  declareExperimentalWebMcpTool,
+  declareWebMcpTool,
   isWebMcpSupported,
-  provideExperimentalWebMcpTools,
+  provideWebMcpTools,
   resolveModelContext,
 } from '../../dist/webmcp-angular/fesm2022/webmcp-angular.mjs';
 
@@ -56,9 +56,9 @@ describe('SSR / prerender (no document)', () => {
     expect(resolved.modelContext).toBeNull();
   });
 
-  it('declareExperimentalWebMcpTool resolves quietly and registers nothing', async () => {
+  it('declareWebMcpTool resolves quietly and registers nothing', async () => {
     await expect(
-      declareExperimentalWebMcpTool(
+      declareWebMcpTool(
         {
           name: 'server_side',
           description: 'Must never register during a server render.',
@@ -72,11 +72,11 @@ describe('SSR / prerender (no document)', () => {
     ).resolves.toBeUndefined();
   });
 
-  it('provideExperimentalWebMcpTools creates its injector without throwing', () => {
+  it('provideWebMcpTools creates its injector without throwing', () => {
     expect(() =>
       createEnvironmentInjector(
         [
-          provideExperimentalWebMcpTools([
+          provideWebMcpTools([
             {
               name: 'server_side_provided',
               description: 'Must never register during a server render.',
@@ -95,7 +95,7 @@ describe('SSR / prerender (no document)', () => {
   it('stays silent — no console noise during a server render', async () => {
     createEnvironmentInjector(
       [
-        provideExperimentalWebMcpTools([
+        provideWebMcpTools([
           {
             name: 'quiet',
             description: 'Registration is skipped without comment.',
@@ -118,7 +118,7 @@ describe('SSR / prerender (no document)', () => {
 
     createEnvironmentInjector(
       [
-        provideExperimentalWebMcpTools([
+        provideWebMcpTools([
           {
             name: 'dup',
             description: 'Registered twice — on a server this must still be inert.',

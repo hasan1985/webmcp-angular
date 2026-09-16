@@ -1,5 +1,5 @@
 import {ApplicationConfig, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection} from '@angular/core';
-import {provideExperimentalWebMcpTools} from 'webmcp-angular';
+import {provideWebMcpTools} from 'webmcp-angular';
 import {webMcpTool} from 'webmcp-angular/strict';
 
 // Uses the /strict secondary entry point on purpose. It imports its types from the
@@ -22,6 +22,6 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideZonelessChangeDetection(),
-    provideExperimentalWebMcpTools([echoCount]),
+    provideWebMcpTools([echoCount]),
   ],
 };

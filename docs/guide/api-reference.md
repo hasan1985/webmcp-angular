@@ -2,19 +2,21 @@
 
 # API reference
 
-Every export, by entry point. The **✓** column says whether it survives a migration
-to `@angular/core` v22 unchanged.
+Every export, by entry point. The **✓** column marks exports with an `@angular/core`
+v22 counterpart, so you can see at a glance what a switch to the native API would and
+wouldn't touch.
 
 ---
 
 ## `webmcp-angular` — core
 
-Signature-identical to `@angular/core` v22.
+Mirrors `@angular/core` v22: same parameters, types and behaviour. Angular prefixes
+its two functions with `Experimental`; this package doesn't.
 
 | Export | ✓ | |
 |---|---|---|
-| `declareExperimentalWebMcpTool` | ✓ | function |
-| `provideExperimentalWebMcpTools` | ✓ | function |
+| `declareWebMcpTool` | ✓ | function |
+| `provideWebMcpTools` | ✓ | function |
 | `WebMcpToolDescriptor` | ✓ | type |
 | `WebMcpToolExecute` | ✓ | type |
 | `WebMcpClient` | ✓ | type |
@@ -25,10 +27,10 @@ Signature-identical to `@angular/core` v22.
 | `displayTitle` | ✗ | ours |
 | `ModelContextSource`, `ResolvedModelContext` | ✗ | ours, types |
 
-### `declareExperimentalWebMcpTool(tool, injector?)`
+### `declareWebMcpTool(tool, injector?)`
 
 ```ts
-function declareExperimentalWebMcpTool<const InputSchema extends JsonSchemaForInference>(
+function declareWebMcpTool<const InputSchema extends JsonSchemaForInference>(
   tool: WebMcpToolDescriptor<InputSchema>,
   injector?: Injector,
 ): Promise<void>
@@ -40,10 +42,10 @@ pass — is destroyed. Throws `NG0203` if called outside an injection context wi
 
 Rejects with `InvalidStateError` if the name is already registered.
 
-### `provideExperimentalWebMcpTools(tools)`
+### `provideWebMcpTools(tools)`
 
 ```ts
-function provideExperimentalWebMcpTools<const InputSchema extends JsonSchemaForInference>(
+function provideWebMcpTools<const InputSchema extends JsonSchemaForInference>(
   tools: WebMcpToolDescriptor<InputSchema>[],
 ): EnvironmentProviders
 ```

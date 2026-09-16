@@ -2,9 +2,9 @@
 
 Expose your Angular app's features to AI agents, as typed functions they can call.
 
-An **API-compatible backport of Angular 22's experimental [WebMCP][ng-webmcp] support
-for Angular 20 and 21** — plus a test harness, a dev inspector, and a bridge to
-desktop MCP clients, none of which Angular provides.
+Brings Angular 22's [WebMCP][ng-webmcp] API to **Angular 20 and 21** — plus a test
+harness, a dev inspector, and a bridge to desktop MCP clients, none of which Angular
+provides.
 
 ```bash
 npm install webmcp-angular @mcp-b/webmcp-polyfill
@@ -13,7 +13,7 @@ npm install webmcp-angular @mcp-b/webmcp-polyfill
 ## What it looks like
 
 ```ts
-provideExperimentalWebMcpTools([
+provideWebMcpTools([
   {
     name: 'add_to_cart',
     description: 'Add a product to the cart. Use the SKU shown on the product page.',
@@ -50,19 +50,26 @@ agent can play, page-scoped tools, a chat panel, and the inspector.
 
 ## Entry points
 
-| | Survives migration to v22? | |
+| | Angular equivalent | |
 |---|---|---|
-| `webmcp-angular` | ✓ identical surface | `declareExperimentalWebMcpTool`, `provideExperimentalWebMcpTools`, types |
-| `/strict` | — type-level no-op | `webMcpTool()`, working around [angular#70125][issue] |
-| `/polyfill` | — keep | `installWebMcpPolyfill()` |
-| `/testing` | — keep | test harness; Angular ships none |
-| `/devtools` | — keep | inspector; Angular ships none |
-| `/bridge` | — keep | MCP over JSON-RPC, so Claude Desktop and Cursor can reach your tools |
+| `webmcp-angular` | ✓ mirrors `@angular/core` v22 | `declareWebMcpTool`, `provideWebMcpTools`, types |
+| `/strict` | — | `webMcpTool()`, working around [angular#70125][issue] |
+| `/polyfill` | — | `installWebMcpPolyfill()` |
+| `/testing` | — | test harness; Angular ships none |
+| `/devtools` | — | inspector; Angular ships none |
+| `/bridge` | — | MCP over JSON-RPC, so Claude Desktop and Cursor can reach your tools |
 
-The core entry point is signature-identical to `@angular/core` v22 on purpose — right
-down to [reproducing a known upstream typing defect][issue], because a "fixed"
-signature would accept code that v22 rejects. Migrating is a change of import path,
-and [a schematic does it for you](./docs/guide/06-migrating-to-angular-22.md).
+The core entry point mirrors `@angular/core` v22 on purpose — same parameters, types
+and behaviour, right down to [reproducing a known upstream typing defect][issue],
+because a "fixed" signature would accept code Angular rejects. The only difference is
+the name: Angular prefixes its two functions with `Experimental`, this package
+doesn't.
+
+That keeps **moving to Angular's native WebMCP an open, cheap option** rather than a
+rewrite — [a schematic does it](./docs/guide/06-migrating-to-angular-22.md) when and
+if you want it. It isn't a plan to disappear: four of the six entry points above have
+no Angular equivalent, so keeping this alongside the native API is a perfectly normal
+end state.
 
 ## Requirements
 

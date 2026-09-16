@@ -28,12 +28,18 @@ const EXPORT_ALIASES = {
   Execute: 'WebMcpToolExecute',
 };
 
+/**
+ * Our functions drop Angular's `Experimental` prefix, so the comparison normalizes
+ * the name away and checks what actually matters: parameters, type arguments and
+ * return type. A rename is a deliberate, documented difference; a changed signature
+ * is not.
+ */
 const SYMBOLS = [
   {kind: 'interface', angular: 'Client', ours: 'WebMcpClient'},
   {kind: 'type', angular: 'Execute', ours: 'WebMcpToolExecute'},
   {kind: 'interface', angular: 'ToolDescriptor', ours: 'WebMcpToolDescriptor'},
-  {kind: 'function', angular: 'declareExperimentalWebMcpTool', ours: 'declareExperimentalWebMcpTool'},
-  {kind: 'function', angular: 'provideExperimentalWebMcpTools', ours: 'provideExperimentalWebMcpTools'},
+  {kind: 'function', angular: 'declareExperimentalWebMcpTool', ours: 'declareWebMcpTool'},
+  {kind: 'function', angular: 'provideExperimentalWebMcpTools', ours: 'provideWebMcpTools'},
 ];
 
 /** Extracts one declaration, brace-matching for interfaces. */
@@ -113,8 +119,17 @@ function main() {
       continue;
     }
 
-    const a = normalize(angularDecl, EXPORT_ALIASES);
-    const b = normalize(oursDecl, {});
+    // Compare shapes, not names. Applied symmetrically to both sides: the three
+    // types already share a name after EXPORT_ALIASES, while the two functions
+    // differ by the Experimental prefix, so blanking both spellings everywhere is
+    // the one rule that handles each case.
+    const blankName = (text) =>
+      text
+        .replace(new RegExp(`\\b${angular}\\b`, 'g'), '<name>')
+        .replace(new RegExp(`\\b${ours}\\b`, 'g'), '<name>');
+
+    const a = blankName(normalize(angularDecl, EXPORT_ALIASES));
+    const b = blankName(normalize(oursDecl, {}));
 
     if (a === b) {
       console.log(`✔ ${ours}`);
@@ -136,7 +151,10 @@ function main() {
     );
     process.exit(1);
   }
-  console.log(`✔ All ${SYMBOLS.length} declarations match @angular/core@${angularVersion}.`);
+  console.log(
+    `✔ All ${SYMBOLS.length} declarations match @angular/core@${angularVersion}` +
+      ' (names normalized: we drop the Experimental prefix).',
+  );
 }
 
 main();

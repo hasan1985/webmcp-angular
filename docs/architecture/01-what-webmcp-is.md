@@ -130,8 +130,8 @@ Three layers, each doing one job:
    │  YOUR APP        CartService, GameStore, …                │
    │                  ↑ knows nothing about WebMCP             │
    ├───────────────────────────────────────────────────────────┤
-   │  ANGULAR         provideExperimentalWebMcpTools(…)        │
-   │                  declareExperimentalWebMcpTool(…)         │
+   │  ANGULAR         provideWebMcpTools(…)        │
+   │                  declareWebMcpTool(…)         │
    │                  · ties tool lifetime to an Injector      │
    │                  · runs execute in the injection context  │
    ├───────────────────────────────────────────────────────────┤

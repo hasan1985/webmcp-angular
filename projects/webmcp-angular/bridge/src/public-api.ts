@@ -1,8 +1,8 @@
 /*
  * webmcp-angular/bridge
  *
- * NON-MIGRATING entry point: Angular v22 has no equivalent, and none is planned.
- * This is the one capability that might outlive the migration — see the README.
+ * No `@angular/core` equivalent, and none is planned. If you keep one thing from
+ * this package after switching to Angular's native API, it is probably this.
  *
  * ── What this is ────────────────────────────────────────────────────────────
  *

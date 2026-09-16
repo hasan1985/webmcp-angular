@@ -39,7 +39,7 @@ The ideal: the agent sees the tools that make sense *here, now*.
 ```ts
 // app.config.ts
 providers: [
-  provideExperimentalWebMcpTools([getBoardTool]),
+  provideWebMcpTools([getBoardTool]),
 ]
 ```
 
@@ -52,7 +52,7 @@ Registered when the app bootstraps, unregistered when the root injector is destr
 @Component({...})
 export class NotesPage {
   constructor() {
-    declareExperimentalWebMcpTool({
+    declareWebMcpTool({
       name: 'add_note',
       description: 'Add a note. Only available while the notes page is open.',
       inputSchema: {type: 'object', properties: {text: {type: 'string'}}, required: ['text']},
@@ -77,7 +77,7 @@ This looks like the obvious way to scope a tool to a route:
 ```ts
 {
   path: 'notes',
-  providers: [provideExperimentalWebMcpTools([addNoteTool])],   // ⚠️
+  providers: [provideWebMcpTools([addNoteTool])],   // ⚠️
   loadComponent: () => import('./notes.page').then(m => m.NotesPage),
 }
 ```
@@ -113,7 +113,7 @@ Declare route-scoped tools **in the routed component**:
 @Component({...})
 export class NotesPage {
   constructor() {
-    declareExperimentalWebMcpTool({ /* … */ });   // dies with the component
+    declareWebMcpTool({ /* … */ });   // dies with the component
   }
 }
 ```
@@ -141,7 +141,7 @@ export class CheckoutDialog {
   constructor() {
     // The dialog's own injector is destroyed when the dialog closes,
     // so the tool disappears with it.
-    declareExperimentalWebMcpTool({
+    declareWebMcpTool({
       name: 'confirm_payment',
       description: 'Confirm the pending payment. Only valid while checkout is open.',
       inputSchema: {type: 'object', properties: {}},

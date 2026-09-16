@@ -10,25 +10,27 @@
 
 ## 0. The governing constraint
 
-**Everything in this package exists to be deleted.**
+**Keep switching to Angular's native WebMCP an open, cheap option.**
 
-The success criterion is not "best Angular WebMCP library." It is: *the day the app
-reaches Angular 22, swapping `webmcp-angular` for `@angular/core` changes no
-application code except imports.*
+Not a commitment to switch — that call can be made later, on its merits, and several
+entry points here have no Angular equivalent at all, so staying is a reasonable end
+state. The constraint is that the decision must never be *expensive*: *if the app
+moves to Angular's native API, no application code changes beyond imports.*
 
-That single rule decides every open question from the previous draft:
+A design discipline, not a prediction. It still decides every open question below:
 
 | Question | Resolved by the rule |
 |---|---|
 | Public API design | Copied verbatim from `@angular/core` v22. No inventions in the core entry point. |
 | Schema library | Whatever Angular uses — `JsonSchemaForInference` from `@mcp-b/webmcp-types`. No Zod in the core API. |
-| Resources / prompts | **Out.** Angular doesn't have them; adding them creates migration debt. |
-| Registry / governance / inspector | Allowed **only** in separate, clearly-marked entry points that the app can opt into knowing they won't survive migration. |
+| Resources / prompts | **Out of core.** Angular has no equivalent, so putting them there would close the option off. |
+| Registry / governance / inspector | Allowed **only** in separate, clearly-marked entry points, so the core surface stays swappable whatever else you use. |
 | Transports | Same — optional entry point, not core. |
 | Behaviour on v22+ | Detect `@angular/core`'s implementation and **delegate** to it, never double-register. |
 
-Anything that tempts you to "improve" the API is a future migration bug. Improvements
-go upstream as an Angular issue/PR, not into this package's core.
+Anything that tempts you to "improve" the core API narrows that option. Improvements
+go upstream as an Angular issue/PR, or into a non-core entry point — not into the
+core surface.
 
 ---
 
@@ -125,10 +127,10 @@ the JSDoc notes the result "is typically just a raw `string`."
 
 ```ts
 // @angular/core
-declare function declareExperimentalWebMcpTool<const InputSchema extends JsonSchemaForInference>(
+declare function declareWebMcpTool<const InputSchema extends JsonSchemaForInference>(
   tool: ToolDescriptor<InputSchema>, injector?: Injector): Promise<void>;
 
-declare function provideExperimentalWebMcpTools<const InputSchema extends JsonSchemaForInference>(
+declare function provideWebMcpTools<const InputSchema extends JsonSchemaForInference>(
   tools: ToolDescriptor<InputSchema>[]): EnvironmentProviders;
 
 // @angular/forms/signals   — NOT core
@@ -152,7 +154,7 @@ break parity.
 5. Resolution order is `document.modelContext ?? navigator.modelContext`.
 6. **No implicit input validation.** `execute` must validate its own args.
 7. Duplicate names surface as an **unhandled promise rejection**, not a synchronous throw
-   — `provideExperimentalWebMcpTools` does not await its registrations.
+   — `provideWebMcpTools` does not await its registrations.
 8. Signal Forms: `form(model, {experimentalWebMcpTool: {name, description}})` infers the
    schema from the model's *initial value*, derives `required` from validators, and wires
    validation + submit so the agent can self-correct. No inference from
@@ -184,7 +186,7 @@ Forward-compatible: if upstream fixes #70125, the helper degrades to a no-op.
 ### 3.1 Functional
 
 **FR-1 — API parity (the core)**
-- FR-1.1 Export `declareExperimentalWebMcpTool`, `provideExperimentalWebMcpTools`, `WebMcpToolDescriptor`, `WebMcpToolExecute`, `WebMcpToolResult` with byte-identical signatures to v22.
+- FR-1.1 Export `declareWebMcpTool`, `provideWebMcpTools`, `WebMcpToolDescriptor`, `WebMcpToolExecute`, `WebMcpToolResult` with byte-identical signatures to v22.
 - FR-1.2 `execute` invoked via `runInInjectionContext` of the owning injector.
 - FR-1.3 Unregistration driven by `DestroyRef` → `AbortController.abort()` → spec's `registerTool` signal. (Angular's lifecycle and the spec's lifecycle are literally the same mechanism.)
 - FR-1.4 Duplicate-name behaviour matches v22: throw.
@@ -192,7 +194,7 @@ Forward-compatible: if upstream fixes #70125, the helper degrades to a no-op.
 
 **FR-2 — Backport shims for pre-v22 gaps**
 - FR-2.1 `provideEnvironmentInitializer` (v19+) — on v17/18 fall back to the `ENVIRONMENT_INITIALIZER` multi-provider.
-- FR-2.2 `withExperimentalAutoCleanupInjectors()` — **the hardest item.** Pre-v22 routers don't destroy route-level environment injectors on navigation. Provide a router-events-driven shim that tracks route injectors and destroys stale ones. If a faithful shim proves unsafe, ship a *documented alternative*: declare route tools in the routed component via `declareExperimentalWebMcpTool()`, which cleans up on component destroy in every version.
+- FR-2.2 `withExperimentalAutoCleanupInjectors()` — **the hardest item.** Pre-v22 routers don't destroy route-level environment injectors on navigation. Provide a router-events-driven shim that tracks route injectors and destroys stale ones. If a faithful shim proves unsafe, ship a *documented alternative*: declare route tools in the routed component via `declareWebMcpTool()`, which cleans up on component destroy in every version.
 - FR-2.3 `provideExperimentalWebMcpForms()` — Signal Forms don't exist pre-v22. Export the symbol so imports don't break; make it a **no-op with a dev-mode warning**, and document that form tools must be hand-written until v22. (Optionally: a Reactive Forms equivalent in `/forms-compat`, explicitly non-migrating.)
 
 **FR-3 — Runtime adapter**
@@ -202,7 +204,7 @@ Forward-compatible: if upstream fixes #70125, the helper degrades to a no-op.
 - FR-3.4 SSR/prerender: no-op on the server; register on `afterNextRender`. Zoneless-safe.
 
 **FR-4 — v22+ delegation (critical)**
-- FR-4.1 At build or runtime, detect whether `@angular/core` already exports `declareExperimentalWebMcpTool`. If so, **delegate to it** and emit a dev-mode "you can migrate now" notice.
+- FR-4.1 At build or runtime, detect whether `@angular/core` already exports `declareWebMcpTool`. If so, **delegate to it** and emit a dev-mode "you can migrate now" notice.
 - FR-4.2 Guarantee no double registration when the app mixes our imports and core imports during migration.
 
 **FR-5 — Migration tooling**
@@ -243,7 +245,7 @@ layered on top — not here.
         ▼
 ┌───────────────────────────────────────────────────────────┐
 │ webmcp-angular  (core entry point)                         │
-│   declareExperimentalWebMcpTool / provideExperimentalWebMcpTools │
+│   declareWebMcpTool / provideWebMcpTools │
 │   ┌─────────────────────────────────────────────────┐     │
 │   │ CoreDelegationGuard                              │     │
 │   │  @angular/core has it?  ──yes──▶ delegate, warn  │     │
@@ -272,12 +274,12 @@ lifecycle story. Because the spec has no `unregisterTool`, and Angular's teardow
 
 ```ts
 // app.config.ts
-import { provideExperimentalWebMcpTools } from 'webmcp-angular';  // ← only line that changes at v22
+import { provideWebMcpTools } from 'webmcp-angular';  // ← only line that changes at v22
 
 bootstrapApplication(App, {
   providers: [
     provideRouter(routes, withExperimentalAutoCleanupInjectors()),
-    provideExperimentalWebMcpTools([
+    provideWebMcpTools([
       {
         name: 'greet',
         description: 'Greets the agent.',
@@ -297,7 +299,7 @@ bootstrapApplication(App, {
 @Injectable({ providedIn: 'root' })
 export class CartService {
   constructor() {
-    declareExperimentalWebMcpTool({
+    declareWebMcpTool({
       name: 'add_to_cart',
       description: 'Add a product to the shopping cart.',
       inputSchema: {
@@ -344,7 +346,7 @@ webmcp-angular/
 |---|---|---|---|
 | ~~M0~~ | ✅ **Fidelity spike** | Read `@angular/core@22.1.6` `.d.ts` + `fesm2022`; corrected §2 in four places; located forms/router symbols | **Done** — `docs/M0-FINDINGS.md` |
 | ~~M1~~ | ✅ Lifecycle core | `model-context-adapter.ts`, DestroyRef→Abort chain, `AbortSignal.any` composition, `runInInjectionContext` execute | **Done** — untested in a real browser; see M3/M4 |
-| ~~M2~~ | ✅ Core API surface | `declareExperimentalWebMcpTool`, `provideExperimentalWebMcpTools`, types. No env-initializer shim needed at a v20 floor | **Done** — emitted `.d.ts` signatures match v22 |
+| ~~M2~~ | ✅ Core API surface | `declareWebMcpTool`, `provideWebMcpTools`, types. No env-initializer shim needed at a v20 floor | **Done** — emitted `.d.ts` signatures match v22 |
 | ~~M3~~ | ✅ **Parity suite** | `parity/` — shared spec + fake ModelContext, run against ours on 20/21/22 and against `@angular/core` on 22; `.d.ts` diff script; GitHub Actions matrix + weekly drift cron | **Done** — 12/12 on v20 and v21, 24/24 on v22; all 5 declarations match |
 | ~~M4~~ | ✅ Unsupported / SSR / polyfill | `/polyfill` entry point (`installWebMcpPolyfill`); SSR + unsupported-browser + cross-generation specs against the **built artifact**; real Angular SSR fixture prerendered via `scripts/check-packaging.mjs` | **Done** — 7 SSR, 15 env/polyfill tests; prerender emits `webmcp-supported: false`; regression-tested by removing the guard |
 | ~~M5~~ | ✅ Migrate schematic | `ng generate webmcp-angular:migrate` — rewrites core imports to `@angular/core`, reports non-core entry points rather than guessing, removes the dependency only when nothing is left unresolved. **`CoreDelegationGuard` dropped, deliberately** (see below). | **Done** — 9 tests; dry-run against the real playground migrates 2 files and flags 2 |
@@ -405,7 +407,7 @@ atomically so the mixed state never persists.
 ## Sources
 
 - [WebMCP spec draft](https://webmachinelearning.github.io/webmcp/) · [explainer repo](https://github.com/webmachinelearning/webmcp)
-- [Angular — WebMCP (experimental)](https://angular.dev/ai/webmcp) · [`declareExperimentalWebMcpTool`](https://angular.dev/api/core/declareExperimentalWebMcpTool) · [`provideExperimentalWebMcpTools`](https://angular.dev/api/core/provideExperimentalWebMcpTools) · [`WebMcpToolDescriptor`](https://angular.dev/api/core/WebMcpToolDescriptor) · [`WebMcpToolExecute`](https://angular.dev/api/core/WebMcpToolExecute)
+- [Angular — WebMCP (experimental)](https://angular.dev/ai/webmcp) · [`declareWebMcpTool`](https://angular.dev/api/core/declareWebMcpTool) · [`provideWebMcpTools`](https://angular.dev/api/core/provideWebMcpTools) · [`WebMcpToolDescriptor`](https://angular.dev/api/core/WebMcpToolDescriptor) · [`WebMcpToolExecute`](https://angular.dev/api/core/WebMcpToolExecute)
 - [angular/angular@3b0ae5f — feat(core): add `provideWebMcpTools`](https://github.com/angular/angular/commit/3b0ae5fef0328477ee0f5d51980217e7c583a606)
 - [angular/angular#70125 — heterogeneous tool input typing](https://github.com/angular/angular/issues/70125)
 - [WebMCP-org/npm-packages](https://github.com/WebMCP-org/npm-packages) · [`@mcp-b/webmcp-types`](https://www.npmjs.com/package/@mcp-b/webmcp-types) · [`@mcp-b/transports` docs](https://docs.mcp-b.ai/packages/transports)

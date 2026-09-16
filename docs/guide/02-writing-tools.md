@@ -130,7 +130,7 @@ Compile-time only. At runtime the agent can still send anything — see above.
 
 ### The one typing wart
 
-`provideExperimentalWebMcpTools` has **one** type parameter for the whole array, so
+`provideWebMcpTools` has **one** type parameter for the whole array, so
 tools with *different* schemas collapse into a union and stop type-checking. That's
 [angular#70125][issue], still open upstream, and this package reproduces it on
 purpose — a "fixed" signature would accept code that Angular 22 rejects.
@@ -139,9 +139,9 @@ The cast-free fix is one call per tool, so each array stays homogeneous:
 
 ```ts
 providers: [
-  provideExperimentalWebMcpTools([getCartTool]),
-  provideExperimentalWebMcpTools([addToCartTool]),
-  provideExperimentalWebMcpTools([removeFromCartTool]),
+  provideWebMcpTools([getCartTool]),
+  provideWebMcpTools([addToCartTool]),
+  provideWebMcpTools([removeFromCartTool]),
 ]
 ```
 

@@ -1,10 +1,7 @@
-import {
-  declareExperimentalWebMcpTool,
-  provideExperimentalWebMcpTools,
-} from '../../projects/webmcp-angular/src/public-api';
+import {declareWebMcpTool, provideWebMcpTools} from '../../projects/webmcp-angular/src/public-api';
 import {runParitySuite} from '../shared/parity-suite';
 
 runParitySuite(`webmcp-angular @ Angular ${process.env['NG_LABEL'] ?? '?'}`, {
-  declareExperimentalWebMcpTool,
-  provideExperimentalWebMcpTools,
+  declareTool: declareWebMcpTool,
+  provideTools: provideWebMcpTools,
 });

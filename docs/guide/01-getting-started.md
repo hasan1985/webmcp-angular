@@ -57,13 +57,13 @@ resolves to `'unavailable'` rather than throwing if the package isn't installed.
 ```ts
 // app.config.ts
 import { ApplicationConfig, inject } from '@angular/core';
-import { provideExperimentalWebMcpTools } from 'webmcp-angular';
+import { provideWebMcpTools } from 'webmcp-angular';
 
 import { CartService } from './cart.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideExperimentalWebMcpTools([
+    provideWebMcpTools([
       {
         name: 'add_to_cart',
         description:
@@ -131,7 +131,7 @@ Same cause. Use `document.modelContext?.getTools()`.
 
 **A stray `InvalidStateError` in the console, and one tool is missing.**
 Two tools registered under the same name. Names are unique per *document*, not per
-module. `provideExperimentalWebMcpTools` doesn't await its registrations, so the
+module. `provideWebMcpTools` doesn't await its registrations, so the
 collision surfaces as an unhandled rejection rather than a throw — bootstrap
 succeeds and the second tool is simply absent.
 

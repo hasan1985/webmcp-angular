@@ -27,10 +27,10 @@ self-correct. Never trust the shape.
 **Symptom:** a stray `InvalidStateError` in the console; the app works; one of your
 tools is missing.
 
-`provideExperimentalWebMcpTools` does not await its registrations:
+`provideWebMcpTools` does not await its registrations:
 
 ```js
-for (const tool of tools) declareExperimentalWebMcpTool(tool);   // no await
+for (const tool of tools) declareWebMcpTool(tool);   // no await
 ```
 
 so a collision rejects into nowhere. Bootstrap succeeds, the second tool is simply
@@ -157,9 +157,9 @@ document.modelContext?.addEventListener?.('toolchange', handler);
 ## 9. Heterogeneous tool schemas do not type-check in one array
 
 **Symptom:** `Type '["square","player"]' is not assignable to type '[]'` from a
-`provideExperimentalWebMcpTools([...])` call.
+`provideWebMcpTools([...])` call.
 
-`provideExperimentalWebMcpTools<const S>(tools: WebMcpToolDescriptor<S>[])` has one
+`provideWebMcpTools<const S>(tools: WebMcpToolDescriptor<S>[])` has one
 type parameter for the whole array, so every tool in a single call must share one
 schema type. Tools with different schemas have no valid `S`
 ([angular#70125](https://github.com/angular/angular/issues/70125), still open).
@@ -168,8 +168,8 @@ schema type. Tools with different schemas have no valid `S`
 no casts.
 
 ```ts
-provideExperimentalWebMcpTools([getBoardTool]),
-provideExperimentalWebMcpTools([makeMoveTool]),
+provideWebMcpTools([getBoardTool]),
+provideWebMcpTools([makeMoveTool]),
 ```
 
 The alternative you will see elsewhere, `as unknown as WebMcpToolDescriptor<never>[]`,

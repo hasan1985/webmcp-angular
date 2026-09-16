@@ -6,7 +6,7 @@ import {
   installWebMcpPolyfill,
 } from '../../dist/webmcp-angular/fesm2022/webmcp-angular-polyfill.mjs';
 import {
-  declareExperimentalWebMcpTool,
+  declareWebMcpTool,
   isWebMcpSupported,
   resolveModelContext,
 } from '../../dist/webmcp-angular/fesm2022/webmcp-angular.mjs';
@@ -55,7 +55,7 @@ describe('installWebMcpPolyfill', () => {
   it('makes tools actually registerable end to end', async () => {
     await installWebMcpPolyfill();
 
-    await declareExperimentalWebMcpTool(
+    await declareWebMcpTool(
       {
         name: 'polyfilled',
         description: 'Registered through the polyfill.',
@@ -73,7 +73,7 @@ describe('installWebMcpPolyfill', () => {
     await installWebMcpPolyfill();
 
     const child = Injector.create({providers: [], parent: root}) as EnvironmentInjector;
-    await declareExperimentalWebMcpTool(
+    await declareWebMcpTool(
       {
         name: 'scoped_polyfilled',
         description: 'Should disappear on destroy.',

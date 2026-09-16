@@ -1,8 +1,8 @@
 /*
  * webmcp-angular/strict
  *
- * NON-MIGRATING entry point: Angular v22 has no equivalent. Anything imported
- * from here must be removed or replaced by hand when migrating to @angular/core.
+ * No `@angular/core` equivalent. If you later switch to Angular's native WebMCP,
+ * this keeps working as-is — it is a type-level no-op, not a runtime dependency.
  */
 
 import type {JsonSchemaForInference, WebMcpToolDescriptor} from 'webmcp-angular';
@@ -23,14 +23,14 @@ import type {JsonSchemaForInference, WebMcpToolDescriptor} from 'webmcp-angular'
  * });
  * ```
  *
- * **It does not fix the provider call.** `provideExperimentalWebMcpTools` takes one
+ * **It does not fix the provider call.** `provideWebMcpTools` takes one
  * type parameter for the whole array, so tools with *different* input schemas still
  * have no valid `S` and the call will not compile. The fix there is one call per
  * tool, which keeps each array homogeneous and needs no cast:
  *
  * ```ts
- * provideExperimentalWebMcpTools([addToCart]),
- * provideExperimentalWebMcpTools([removeFromCart]),
+ * provideWebMcpTools([addToCart]),
+ * provideWebMcpTools([removeFromCart]),
  * ```
  *
  * The alternative — `as unknown as WebMcpToolDescriptor<never>[]` — compiles but

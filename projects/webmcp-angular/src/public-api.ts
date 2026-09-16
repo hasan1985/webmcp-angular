@@ -1,9 +1,14 @@
 /*
  * webmcp-angular — public API (core entry point)
  *
- * GOVERNING RULE: every symbol exported from THIS file must be signature-identical
- * to `@angular/core` v22. Migrating to Angular 22 must be a change of import path
- * and nothing else. Additive ideas belong in /strict, /bridge, /devtools, /testing.
+ * GOVERNING RULE: every symbol exported from THIS file must be structurally
+ * identical to its `@angular/core` v22 counterpart — same parameters, same types,
+ * same behaviour. Only the name differs: Angular prefixes these `Experimental`,
+ * we do not.
+ *
+ * That keeps switching to Angular's native API a mechanical change (the migrate
+ * schematic does it), rather than a rewrite. Additive ideas belong in /strict,
+ * /polyfill, /bridge, /devtools, /testing — not here.
  *
  * Verified against @angular/core@22.1.6 — see docs/M0-FINDINGS.md.
  */
@@ -16,8 +21,8 @@ export type {
 } from './lib/core/tool-types';
 
 export {
-  declareExperimentalWebMcpTool,
-  provideExperimentalWebMcpTools,
+  declareWebMcpTool,
+  provideWebMcpTools,
 } from './lib/core/declare-tool';
 
 // Not part of the v22 surface — internal, exported for /devtools and /testing.

@@ -21,7 +21,7 @@ The goal is that the agent sees what makes sense *here, now*.
 ```ts
 // app.config.ts — registered at bootstrap, never unregistered
 providers: [
-  provideExperimentalWebMcpTools([searchTool]),
+  provideWebMcpTools([searchTool]),
 ]
 ```
 
@@ -31,12 +31,12 @@ For genuinely global capabilities. Search, navigation, account info.
 
 ```ts
 import { Component, inject } from '@angular/core';
-import { declareExperimentalWebMcpTool } from 'webmcp-angular';
+import { declareWebMcpTool } from 'webmcp-angular';
 
 @Component({ /* … */ })
 export class CheckoutPage {
   constructor() {
-    declareExperimentalWebMcpTool({
+    declareWebMcpTool({
       name: 'apply_discount_code',
       description: 'Apply a discount code. Only available while checkout is open.',
       inputSchema: {
@@ -67,7 +67,7 @@ it's a bug:
 ```ts
 {
   path: 'checkout',
-  providers: [provideExperimentalWebMcpTools([applyDiscountTool])],   // ⚠️ leaks
+  providers: [provideWebMcpTools([applyDiscountTool])],   // ⚠️ leaks
   loadComponent: () => import('./checkout.page').then((m) => m.CheckoutPage),
 }
 ```
@@ -112,7 +112,7 @@ condition:
 export class ConfirmPaymentDialog {
   constructor() {
     // The dialog's injector dies when the dialog closes, taking the tool with it.
-    declareExperimentalWebMcpTool({
+    declareWebMcpTool({
       name: 'confirm_payment',
       description: 'Confirm the pending payment. Only valid while the dialog is open.',
       inputSchema: { type: 'object', properties: {}, required: [] },

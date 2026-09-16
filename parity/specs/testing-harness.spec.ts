@@ -3,8 +3,8 @@ import {Injector, createEnvironmentInjector, type EnvironmentInjector} from '@an
 
 import {installWebMcpTestHarness} from '../../dist/webmcp-angular/fesm2022/webmcp-angular-testing.mjs';
 import {
-  declareExperimentalWebMcpTool,
-  provideExperimentalWebMcpTools,
+  declareWebMcpTool,
+  provideWebMcpTools,
 } from '../../dist/webmcp-angular/fesm2022/webmcp-angular.mjs';
 
 /**
@@ -42,7 +42,7 @@ describe('installWebMcpTestHarness', () => {
 
   it('observes tools registered through the real library', async () => {
     const webmcp = setup();
-    await declareExperimentalWebMcpTool(greet, root);
+    await declareWebMcpTool(greet, root);
 
     expect(webmcp.has('greet')).toBe(true);
     expect(webmcp.toolNames()).toEqual(['greet']);
@@ -51,14 +51,14 @@ describe('installWebMcpTestHarness', () => {
 
   it('invokes a tool the way an agent would', async () => {
     const webmcp = setup();
-    await declareExperimentalWebMcpTool(greet, root);
+    await declareWebMcpTool(greet, root);
 
     expect(await webmcp.invoke('greet', {who: 'world'})).toBe('hello world');
   });
 
   it('records calls, including the arguments and result', async () => {
     const webmcp = setup();
-    await declareExperimentalWebMcpTool(greet, root);
+    await declareWebMcpTool(greet, root);
 
     await webmcp.invoke('greet', {who: 'a'});
     await webmcp.invoke('greet', {who: 'b'});
@@ -74,7 +74,7 @@ describe('installWebMcpTestHarness', () => {
 
   it('fails with a useful message when a tool never registered', async () => {
     const webmcp = setup();
-    await declareExperimentalWebMcpTool(greet, root);
+    await declareWebMcpTool(greet, root);
 
     // The most common WebMCP bug is a tool that silently did not register, so the
     // error has to name what IS there.
@@ -86,7 +86,7 @@ describe('installWebMcpTestHarness', () => {
   it('sees tools disappear when their injector is destroyed', async () => {
     const webmcp = setup();
     const child = createEnvironmentInjector([], root);
-    await declareExperimentalWebMcpTool(greet, child);
+    await declareWebMcpTool(greet, child);
 
     expect(webmcp.has('greet')).toBe(true);
     child.destroy();
@@ -95,7 +95,7 @@ describe('installWebMcpTestHarness', () => {
 
   it('works with the provider API too', async () => {
     const webmcp = setup();
-    createEnvironmentInjector([provideExperimentalWebMcpTools([greet])], root);
+    createEnvironmentInjector([provideWebMcpTools([greet])], root);
     await Promise.resolve();
 
     expect(webmcp.has('greet')).toBe(true);
@@ -104,11 +104,11 @@ describe('installWebMcpTestHarness', () => {
 
   it('rejects duplicate names, as a browser would', async () => {
     setup();
-    await declareExperimentalWebMcpTool(greet, root);
+    await declareWebMcpTool(greet, root);
 
     let error: unknown;
     try {
-      await declareExperimentalWebMcpTool({...greet}, root);
+      await declareWebMcpTool({...greet}, root);
     } catch (e) {
       error = e;
     }
@@ -121,7 +121,7 @@ describe('installWebMcpTestHarness', () => {
     document.modelContext!.addEventListener('toolchange', () => void events++);
 
     const child = createEnvironmentInjector([], root);
-    await declareExperimentalWebMcpTool(greet, child);
+    await declareWebMcpTool(greet, child);
     expect(events).toBe(1);
 
     child.destroy();
@@ -130,7 +130,7 @@ describe('installWebMcpTestHarness', () => {
 
   it('propagates a throwing tool and records the error', async () => {
     const webmcp = setup();
-    await declareExperimentalWebMcpTool(
+    await declareWebMcpTool(
       {
         name: 'boom',
         description: 'Always throws.',
@@ -149,7 +149,7 @@ describe('installWebMcpTestHarness', () => {
   it('passes an abort signal through to execute', async () => {
     const webmcp = setup();
     let seen: AbortSignal | undefined;
-    await declareExperimentalWebMcpTool(
+    await declareWebMcpTool(
       {
         name: 'cancellable',
         description: 'Captures its signal.',

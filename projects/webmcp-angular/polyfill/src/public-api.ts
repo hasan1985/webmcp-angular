@@ -1,8 +1,8 @@
 /*
  * webmcp-angular/polyfill
  *
- * NON-MIGRATING entry point: Angular v22 has no equivalent. Anything imported
- * from here must be removed or replaced by hand when migrating to @angular/core.
+ * No `@angular/core` equivalent — Angular ships no polyfill. Keep this until the
+ * browsers you support implement WebMCP natively, whichever core API you use.
  */
 
 import {resolveModelContext} from 'webmcp-angular';
@@ -44,7 +44,7 @@ export interface InstallWebMcpPolyfillOptions {
  * targets reject it, and the build fails with "Top-level await is not available in
  * the configured target environment".
  *
- * It is deliberately **not** an Angular provider. `provideExperimentalWebMcpTools`
+ * It is deliberately **not** an Angular provider. `provideWebMcpTools`
  * registers its tools from an environment initializer during bootstrap, and loading
  * the polyfill requires an async dynamic import. A polyfill provider would therefore
  * resolve *after* the tools had already tried (and silently failed) to register —

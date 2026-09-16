@@ -1,5 +1,5 @@
 import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core';
-import {declareExperimentalWebMcpTool, isWebMcpSupported} from 'webmcp-angular';
+import {declareWebMcpTool, isWebMcpSupported} from 'webmcp-angular';
 
 @Component({
   selector: 'app-root',
@@ -14,7 +14,7 @@ export class App {
   protected readonly supported = signal(isWebMcpSupported());
 
   constructor() {
-    declareExperimentalWebMcpTool({
+    declareWebMcpTool({
       name: 'ssr_component_smoke',
       description: 'Declared from a component constructor, which also runs server-side.',
       inputSchema: {type: 'object', properties: {}},

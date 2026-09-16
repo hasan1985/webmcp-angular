@@ -72,7 +72,7 @@ Here is `@angular/core@22.1.6`, near enough verbatim. It is worth reading in ful
 because there is nothing hidden:
 
 ```js
-async function declareExperimentalWebMcpTool(tool, injector) {
+async function declareWebMcpTool(tool, injector) {
   if (typeof ngServerMode !== 'undefined' && ngServerMode) return;      // ① SSR: do nothing
 
   const modelContext = globalThis.document.modelContext
@@ -124,13 +124,13 @@ tool would need its dependencies threaded in by hand.
 
 ## The two registration paths
 
-`provideExperimentalWebMcpTools` is a thin wrapper over the same function:
+`provideWebMcpTools` is a thin wrapper over the same function:
 
 ```js
-function provideExperimentalWebMcpTools(tools) {
+function provideWebMcpTools(tools) {
   return makeEnvironmentProviders([
     provideEnvironmentInitializer(() => {
-      for (const tool of tools) declareExperimentalWebMcpTool(tool);   // note: not awaited
+      for (const tool of tools) declareWebMcpTool(tool);   // note: not awaited
     }),
   ]);
 }
@@ -139,7 +139,7 @@ function provideExperimentalWebMcpTools(tools) {
 So there are two doors into one room:
 
 ```
-   provideExperimentalWebMcpTools([...])        declareExperimentalWebMcpTool({...})
+   provideWebMcpTools([...])        declareWebMcpTool({...})
             │  in a providers array                      │  in a constructor
             │  registers at injector creation            │  registers immediately
             ▼                                            ▼
@@ -149,7 +149,7 @@ So there are two doors into one room:
                           registerTool({signal})
 ```
 
-**That un-awaited loop matters.** `declareExperimentalWebMcpTool` is `async`, and
+**That un-awaited loop matters.** `declareWebMcpTool` is `async`, and
 `registerTool` rejects with `InvalidStateError` on a duplicate name. Because nothing
 awaits it, a name collision surfaces as an **unhandled promise rejection** — it does
 not throw synchronously and does not fail bootstrap. If you see a stray
@@ -159,8 +159,8 @@ not throw synchronously and does not fail bootstrap. If you see a stray
 
 | You want a tool to live… | Attach it to… |
 |---|---|
-| for the whole app | the root injector — `provideExperimentalWebMcpTools` in `app.config.ts` |
-| while a component is on screen | that component — `declareExperimentalWebMcpTool()` in its constructor |
+| for the whole app | the root injector — `provideWebMcpTools` in `app.config.ts` |
+| while a component is on screen | that component — `declareWebMcpTool()` in its constructor |
 | while a service exists | that service — same, in its constructor |
 | while a route is active | **careful** — see [chapter 4](./04-scope-and-navigation.md) |
 

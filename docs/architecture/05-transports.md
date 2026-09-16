@@ -67,7 +67,7 @@ installWebMcpPolyfill()
   .catch(err => console.error(err));
 ```
 
-Why not a provider? `provideExperimentalWebMcpTools` registers from an *environment
+Why not a provider? `provideWebMcpTools` registers from an *environment
 initializer* during bootstrap, and loading the polyfill needs an async dynamic import.
 A polyfill provider would therefore resolve *after* the tools had already tried — and
 silently failed — to register. An ordering trap with no error message.

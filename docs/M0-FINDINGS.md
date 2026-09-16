@@ -49,7 +49,7 @@ export type {
   ToolDescriptor as WebMcpToolDescriptor,
   Execute        as WebMcpToolExecute,
 };
-export { declareExperimentalWebMcpTool, provideExperimentalWebMcpTools };
+export { declareWebMcpTool, provideWebMcpTools };
 ```
 
 `WebMcpToolDescriptor` has exactly four members — `name`, `description`, `inputSchema`,
@@ -62,7 +62,7 @@ PLAN §2 listed all four together. Verified placement:
 
 | Symbol | Package |
 |---|---|
-| `declareExperimentalWebMcpTool`, `provideExperimentalWebMcpTools` | `@angular/core` |
+| `declareWebMcpTool`, `provideWebMcpTools` | `@angular/core` |
 | `provideExperimentalWebMcpForms` | **`@angular/forms/signals`** |
 | `withExperimentalAutoCleanupInjectors` | **`@angular/router`** |
 
@@ -95,14 +95,14 @@ over a shim.
 PLAN FR-1.4 said "matches v22: throw." The shipped implementation:
 
 ```js
-function provideExperimentalWebMcpTools(tools) {
+function provideWebMcpTools(tools) {
   return makeEnvironmentProviders([provideEnvironmentInitializer(() => {
-    for (const tool of tools) declareExperimentalWebMcpTool(tool);   // NOT awaited
+    for (const tool of tools) declareWebMcpTool(tool);   // NOT awaited
   })]);
 }
 ```
 
-`declareExperimentalWebMcpTool` is `async` and awaits `modelContext.registerTool`, which
+`declareWebMcpTool` is `async` and awaits `modelContext.registerTool`, which
 rejects with `InvalidStateError` on a duplicate name. Because the loop does not await,
 a collision surfaces as an **unhandled promise rejection** — it does not throw
 synchronously and does not fail bootstrap. Reproduced verbatim.
@@ -112,12 +112,12 @@ synchronously and does not fail bootstrap. Reproduced verbatim.
 ## 2. The complete v22 implementation (25 lines)
 
 ```js
-async function declareExperimentalWebMcpTool(tool, injector) {
+async function declareWebMcpTool(tool, injector) {
   if (typeof ngServerMode !== 'undefined' && ngServerMode) return;
   const modelContext = globalThis.document.modelContext ?? globalThis.navigator.modelContext;
   if (!modelContext || typeof modelContext.registerTool !== 'function') return;
   if (typeof ngDevMode !== 'undefined' && ngDevMode) {
-    if (!injector) assertInInjectionContext(declareExperimentalWebMcpTool);
+    if (!injector) assertInInjectionContext(declareWebMcpTool);
   }
   const currentInjector = injector ?? inject(Injector);
   const destroyRef = currentInjector.get(DestroyRef);
@@ -308,7 +308,7 @@ question rather than a local workaround.
 ### 6.2 `webMcpTool()` does not fix the provider call — doc correction
 
 `/strict`'s helper fixes *authoring* inference inside one descriptor. It does **not**
-fix `provideExperimentalWebMcpTools`, which has a single type parameter for the whole
+fix `provideWebMcpTools`, which has a single type parameter for the whole
 array: heterogeneous schemas have no valid `S`, and the call fails to compile with or
 without the helper. The cast-free fix is one provider call per tool, keeping each
 array homogeneous. The doc comment has been corrected — it previously overstated this.
@@ -377,13 +377,13 @@ Still not covered:
 ## 7. M6 settled: route-level providers do leak on Angular 20 (measured)
 
 The plan *assumed* this; the playground now *measures* it. A temporary route was
-added with `providers: [provideExperimentalWebMcpTools([probeLeakTool])]`, then
+added with `providers: [provideWebMcpTools([probeLeakTool])]`, then
 navigated away from, in Chrome on Angular 20.3.31:
 
 | Registered via | After navigating away |
 |---|---|
 | Route-level `providers` | **still registered** — leaked |
-| Component constructor (`declareExperimentalWebMcpTool`) | correctly unregistered |
+| Component constructor (`declareWebMcpTool`) | correctly unregistered |
 
 ```
 /game              → get_board, make_move, reset_game
@@ -405,7 +405,7 @@ Angular 22, and `withExperimentalAutoCleanupInjectors()` is exactly what fixes i
    other provider on that route, not just ours. The blast radius is the whole
    application, to fix tool registration.
 
-The documented alternative is `declareExperimentalWebMcpTool()` in the routed
+The documented alternative is `declareWebMcpTool()` in the routed
 component, which is proven above to clean up correctly on **every** supported
 version, and is what `webmcp-angular-playground/src/app/notes/notes.page.ts` demonstrates.
 This is a real limitation of the backport and is called out as such rather than

@@ -116,15 +116,15 @@ send whatever it likes ([chapter 1](./01-what-webmcp-is.md)).
 
 ⚠️ There is an upstream typing defect here worth knowing:
 [angular#70125](https://github.com/angular/angular/issues/70125). Because
-`provideExperimentalWebMcpTools` has **one** type parameter for the whole array, tools
+`provideWebMcpTools` has **one** type parameter for the whole array, tools
 with *different* schemas collapse into a union and stop type-checking. The cast-free
 fix is one call per tool:
 
 ```ts
 providers: [
-  provideExperimentalWebMcpTools([getBoardTool]),
-  provideExperimentalWebMcpTools([makeMoveTool]),   // each array stays homogeneous
-  provideExperimentalWebMcpTools([resetGameTool]),
+  provideWebMcpTools([getBoardTool]),
+  provideWebMcpTools([makeMoveTool]),   // each array stays homogeneous
+  provideWebMcpTools([resetGameTool]),
 ]
 ```
 

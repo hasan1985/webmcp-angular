@@ -15,8 +15,10 @@ import {FakeModelContext, installFakeModelContext} from './fake-model-context';
  * satisfy this — if either stops matching, it will not type-check here.
  */
 export interface WebMcpImpl {
-  declareExperimentalWebMcpTool: (tool: any, injector?: Injector) => Promise<void>;
-  provideExperimentalWebMcpTools: (tools: any[]) => EnvironmentProviders;
+  /** Ours is `declareWebMcpTool`; Angular's is `declareExperimentalWebMcpTool`. */
+  declareTool: (tool: any, injector?: Injector) => Promise<void>;
+  /** Ours is `provideWebMcpTools`; Angular's is `provideExperimentalWebMcpTools`. */
+  provideTools: (tools: any[]) => EnvironmentProviders;
 }
 
 // Deliberately NOT `providedIn: 'root'` — a bare `Injector.create()` is not a
@@ -31,7 +33,9 @@ const EMPTY_SCHEMA = {type: 'object', properties: {}} as const;
  * two runs diverge, the compatibility claim is false.
  */
 export function runParitySuite(label: string, impl: WebMcpImpl): void {
-  const {declareExperimentalWebMcpTool, provideExperimentalWebMcpTools} = impl;
+  // Neutral locals: this spec runs against two implementations whose exports are
+  // named differently (Angular prefixes both functions with `Experimental`).
+  const {declareTool, provideTools} = impl;
 
   describe(`WebMCP parity — ${label}`, () => {
     let fake: FakeModelContext;
@@ -49,9 +53,9 @@ export function runParitySuite(label: string, impl: WebMcpImpl): void {
       uninstall();
     });
 
-    describe('declareExperimentalWebMcpTool', () => {
+    describe('declareTool / declareWebMcpTool', () => {
       it('registers the tool with its name, description and schema', async () => {
-        await declareExperimentalWebMcpTool(
+        await declareTool(
           {
             name: 'greet',
             description: 'Greets the agent.',
@@ -70,7 +74,7 @@ export function runParitySuite(label: string, impl: WebMcpImpl): void {
 
       it('passes the agent arguments through to execute', async () => {
         let seen: unknown;
-        await declareExperimentalWebMcpTool(
+        await declareTool(
           {
             name: 'echo',
             description: 'Echoes input.',
@@ -93,7 +97,7 @@ export function runParitySuite(label: string, impl: WebMcpImpl): void {
       });
 
       it('runs execute inside the injection context, so inject() works', async () => {
-        await declareExperimentalWebMcpTool(
+        await declareTool(
           {
             name: 'from-di',
             description: 'Reads a token from DI.',
@@ -107,7 +111,7 @@ export function runParitySuite(label: string, impl: WebMcpImpl): void {
       });
 
       it('returns whatever execute returns, unwrapped', async () => {
-        await declareExperimentalWebMcpTool(
+        await declareTool(
           {
             name: 'structured',
             description: 'Returns an object.',
@@ -122,7 +126,7 @@ export function runParitySuite(label: string, impl: WebMcpImpl): void {
 
       it('unregisters the tool when the injector is destroyed', async () => {
         const child = createEnvironmentInjector([], root);
-        await declareExperimentalWebMcpTool(
+        await declareTool(
           {
             name: 'scoped',
             description: 'Scoped to a child injector.',
@@ -141,7 +145,7 @@ export function runParitySuite(label: string, impl: WebMcpImpl): void {
         const child = createEnvironmentInjector([], root);
         let captured: AbortSignal | undefined;
 
-        await declareExperimentalWebMcpTool(
+        await declareTool(
           {
             name: 'cancellable',
             description: 'Captures its abort signal.',
@@ -164,7 +168,7 @@ export function runParitySuite(label: string, impl: WebMcpImpl): void {
 
       it("composes the agent's own abort signal with the injector's", async () => {
         let captured: AbortSignal | undefined;
-        await declareExperimentalWebMcpTool(
+        await declareTool(
           {
             name: 'agent-cancel',
             description: 'Captures its abort signal.',
@@ -193,11 +197,11 @@ export function runParitySuite(label: string, impl: WebMcpImpl): void {
           inputSchema: EMPTY_SCHEMA,
           execute: () => 'ok',
         };
-        await declareExperimentalWebMcpTool(tool, root);
+        await declareTool(tool, root);
 
         let error: unknown;
         try {
-          await declareExperimentalWebMcpTool({...tool}, root);
+          await declareTool({...tool}, root);
         } catch (e) {
           error = e;
         }
@@ -207,7 +211,7 @@ export function runParitySuite(label: string, impl: WebMcpImpl): void {
       it('is a silent no-op when the browser has no WebMCP support', async () => {
         uninstall();
         await expect(
-          declareExperimentalWebMcpTool(
+          declareTool(
             {
               name: 'unsupported',
               description: 'Should never register.',
@@ -220,11 +224,11 @@ export function runParitySuite(label: string, impl: WebMcpImpl): void {
       });
     });
 
-    describe('provideExperimentalWebMcpTools', () => {
+    describe('provideTools / provideWebMcpTools', () => {
       it('registers every tool when the environment injector is created', async () => {
         createEnvironmentInjector(
           [
-            provideExperimentalWebMcpTools([
+            provideTools([
               {
                 name: 'a',
                 description: 'Tool A.',
@@ -251,7 +255,7 @@ export function runParitySuite(label: string, impl: WebMcpImpl): void {
       it('unregisters every tool when that injector is destroyed', async () => {
         const child = createEnvironmentInjector(
           [
-            provideExperimentalWebMcpTools([
+            provideTools([
               {
                 name: 'scoped-a',
                 description: 'Tool A.',
@@ -274,7 +278,7 @@ export function runParitySuite(label: string, impl: WebMcpImpl): void {
         const child = createEnvironmentInjector(
           [
             {provide: GREETING, useValue: 'scoped greeting'},
-            provideExperimentalWebMcpTools([
+            provideTools([
               {
                 name: 'scoped-di',
                 description: 'Reads a scoped token.',

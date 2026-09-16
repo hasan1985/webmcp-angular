@@ -1,10 +1,9 @@
 /*
  * webmcp-angular/testing
  *
- * NON-MIGRATING entry point: Angular v22 ships no test harness. Anything imported
- * from here must be replaced by hand when migrating to @angular/core — though the
- * harness is framework-agnostic and does not depend on the rest of this package's
- * runtime, so it can simply be vendored into your own test utilities.
+ * No `@angular/core` equivalent — Angular ships no test harness. This works against
+ * whichever core API you use: it is framework-agnostic and does not depend on the
+ * rest of this package's runtime.
  */
 
 /** A tool as the browser holds it, after registration. */
@@ -145,7 +144,7 @@ function safeParse(json: string): unknown {
  * afterEach(() => webmcp.uninstall());
  *
  * it('exposes add_to_cart', async () => {
- *   TestBed.configureTestingModule({providers: [provideExperimentalWebMcpTools([addToCart])]});
+ *   TestBed.configureTestingModule({providers: [provideWebMcpTools([addToCart])]});
  *   TestBed.inject(ApplicationRef);              // force environment initializers to run
  *
  *   expect(webmcp.has('add_to_cart')).toBe(true);

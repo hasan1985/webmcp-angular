@@ -3,11 +3,11 @@ import {Injector, createEnvironmentInjector, type EnvironmentInjector} from '@an
 
 // The built artifact again — this is about what ships, not what compiles.
 import {
-  declareExperimentalWebMcpTool,
+  declareWebMcpTool,
   isWebMcpSupported,
   normalizeInputSchema,
   displayTitle,
-  provideExperimentalWebMcpTools,
+  provideWebMcpTools,
   resolveModelContext,
 } from '../../dist/webmcp-angular/fesm2022/webmcp-angular.mjs';
 
@@ -55,7 +55,7 @@ describe('unsupported browser (document exists, modelContext does not)', () => {
   it('registration resolves quietly and never runs execute', async () => {
     let ran = false;
     await expect(
-      declareExperimentalWebMcpTool(
+      declareWebMcpTool(
         {
           name: 'nowhere',
           description: 'No agent can ever see this.',
@@ -75,7 +75,7 @@ describe('unsupported browser (document exists, modelContext does not)', () => {
     expect(() =>
       createEnvironmentInjector(
         [
-          provideExperimentalWebMcpTools([
+          provideWebMcpTools([
             {
               name: 'nowhere_provided',
               description: 'No agent can ever see this.',
@@ -90,7 +90,7 @@ describe('unsupported browser (document exists, modelContext does not)', () => {
   });
 
   it('says nothing at all — matching v22, which returns early without comment', async () => {
-    await declareExperimentalWebMcpTool(
+    await declareWebMcpTool(
       {
         name: 'quiet',
         description: 'Silence is the contract.',
@@ -114,7 +114,7 @@ describe('unsupported browser (document exists, modelContext does not)', () => {
     });
 
     expect(resolveModelContext().source).toBe('navigator');
-    await declareExperimentalWebMcpTool(
+    await declareWebMcpTool(
       {
         name: 'legacy_surface',
         description: 'Registers through the deprecated navigator surface.',

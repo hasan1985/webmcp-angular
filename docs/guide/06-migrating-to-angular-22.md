@@ -2,8 +2,14 @@
 
 # 6. Migrating to Angular 22
 
-This package exists to be deleted. Angular 22 ships the same API in `@angular/core`,
-and the core entry point here is signature-identical to it on purpose.
+You may never do this, and that's fine — several entry points here have no Angular
+equivalent, so keeping the package is a perfectly good end state.
+
+The point is that switching stays **cheap and available**. Angular 22 ships the same
+API in `@angular/core`, and this package's core entry point mirrors it deliberately:
+same parameters, same types, same behaviour, differing only in that Angular prefixes
+the two functions with `Experimental` and we don't. So the move is mechanical, and a
+schematic does it.
 
 ## Run the schematic
 
@@ -49,8 +55,8 @@ working, not failing.
 Everything from the **core** entry point:
 
 ```ts
-declareExperimentalWebMcpTool
-provideExperimentalWebMcpTools
+declareWebMcpTool
+provideWebMcpTools
 WebMcpToolDescriptor
 WebMcpToolExecute
 WebMcpClient

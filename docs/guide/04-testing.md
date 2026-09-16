@@ -13,7 +13,7 @@ you already use.
 
 ```ts
 import { TestBed } from '@angular/core/testing';
-import { provideExperimentalWebMcpTools } from 'webmcp-angular';
+import { provideWebMcpTools } from 'webmcp-angular';
 import { installWebMcpTestHarness, type WebMcpHarness } from 'webmcp-angular/testing';
 
 describe('cart tools', () => {
@@ -24,7 +24,7 @@ describe('cart tools', () => {
     webmcp = installWebMcpTestHarness();
 
     TestBed.configureTestingModule({
-      providers: [provideExperimentalWebMcpTools([addToCartTool])],
+      providers: [provideWebMcpTools([addToCartTool])],
     });
 
     // Environment initializers run lazily — touching the injector forces them.

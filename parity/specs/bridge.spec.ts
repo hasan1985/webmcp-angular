@@ -3,7 +3,7 @@ import {Injector, type EnvironmentInjector} from '@angular/core';
 
 import {createWebMcpBridge} from '../../dist/webmcp-angular/fesm2022/webmcp-angular-bridge.mjs';
 import {installWebMcpTestHarness} from '../../dist/webmcp-angular/fesm2022/webmcp-angular-testing.mjs';
-import {declareExperimentalWebMcpTool} from '../../dist/webmcp-angular/fesm2022/webmcp-angular.mjs';
+import {declareWebMcpTool} from '../../dist/webmcp-angular/fesm2022/webmcp-angular.mjs';
 
 /**
  * M8 — the JSON-RPC bridge.
@@ -102,7 +102,7 @@ describe('createWebMcpBridge', () => {
   beforeEach(async () => {
     harness = installWebMcpTestHarness();
     root = Injector.create({providers: []}) as EnvironmentInjector;
-    await declareExperimentalWebMcpTool(greet, root);
+    await declareWebMcpTool(greet, root);
 
     bridge = createWebMcpBridge({
       allowedOrigins: [window.location.origin],
@@ -190,7 +190,7 @@ describe('createWebMcpBridge', () => {
   });
 
   it('returns isError for a tool that throws, rather than a protocol error', async () => {
-    await declareExperimentalWebMcpTool(
+    await declareWebMcpTool(
       {
         name: 'boom',
         description: 'Always throws.',
@@ -228,7 +228,7 @@ describe('createWebMcpBridge', () => {
 
   it('emits tools/list_changed when the page fires toolchange', async () => {
     const child = Injector.create({providers: [], parent: root}) as EnvironmentInjector;
-    await declareExperimentalWebMcpTool(
+    await declareWebMcpTool(
       {
         name: 'transient',
         description: 'Comes and goes.',

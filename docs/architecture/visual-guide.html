@@ -439,7 +439,7 @@ document.modelContext.ontoolchange                               <span class="c"
       <!-- angular -->
       <rect x="16" y="110" width="868" height="96" rx="3" fill="none" stroke="var(--ng)" stroke-width="1.5"/>
       <text x="36" y="136" font-family="IBM Plex Mono, monospace" font-size="11.5" letter-spacing="1" fill="var(--ng)">ANGULAR</text>
-      <text x="36" y="160" font-family="IBM Plex Mono, monospace" font-size="13" fill="currentColor">provideExperimentalWebMcpTools() · declareExperimentalWebMcpTool()</text>
+      <text x="36" y="160" font-family="IBM Plex Mono, monospace" font-size="13" fill="currentColor">provideWebMcpTools() · declareWebMcpTool()</text>
 
       <circle cx="42" cy="180" r="2.5" fill="var(--ng)"/>
       <text x="54" y="185" font-family="IBM Plex Sans, sans-serif" font-size="13" fill="currentColor">ties a tool's lifetime to an <tspan font-family="IBM Plex Mono, monospace" font-size="12">Injector</tspan></text>
@@ -527,17 +527,17 @@ document.modelContext.ontoolchange                               <span class="c"
   <h3>The two registration doors</h3>
 
 <pre><code><span class="c">// app.config.ts — lives as long as the root injector</span>
-providers: [ provideExperimentalWebMcpTools([getBoardTool]) ]
+providers: [ provideWebMcpTools([getBoardTool]) ]
 
 <span class="c">// a component or service — lives as long as that instance</span>
 constructor() {
-  declareExperimentalWebMcpTool({ name: 'add_note', … });
+  declareWebMcpTool({ name: 'add_note', … });
 }</code></pre>
 
   <div class="note">
     <span class="tag">Silent failure</span>
     <p>
-      <code>provideExperimentalWebMcpTools</code> does <strong>not await</strong> its
+      <code>provideWebMcpTools</code> does <strong>not await</strong> its
       registrations. <code>registerTool</code> rejects with <code>InvalidStateError</code>
       on a duplicate name, so a collision becomes an <strong>unhandled promise
       rejection</strong> — bootstrap succeeds and the second tool is simply absent. If you
@@ -773,7 +773,7 @@ agent → make_move({square: 5, player: "O"})    <span class="c">← it fixed it
   <p>
     Native WebMCP is Chrome-only and flagged, so in practice you develop against a polyfill.
     It has to finish <em>before</em> tools register — which rules out doing it in a provider,
-    because <code>provideExperimentalWebMcpTools</code> registers from an environment
+    because <code>provideWebMcpTools</code> registers from an environment
     initializer during bootstrap:
   </p>
 
@@ -874,7 +874,7 @@ agent → make_move({square: 5, player: "O"})    <span class="c">← it fixed it
       <div>
         <h4>Heterogeneous schemas will not type-check in one array</h4>
         <p>One type parameter covers the whole array, so tools with different schemas have no valid <code>S</code> — <a href="https://github.com/angular/angular/issues/70125">angular#70125</a>, still open.</p>
-        <p class="fix"><b>Fix</b> One <code>provideExperimentalWebMcpTools</code> call per tool; each array stays homogeneous and needs no cast.</p>
+        <p class="fix"><b>Fix</b> One <code>provideWebMcpTools</code> call per tool; each array stays homogeneous and needs no cast.</p>
       </div>
     </div>
   </div>
