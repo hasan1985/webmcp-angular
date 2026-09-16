@@ -12,7 +12,7 @@ timeline, which is usually what you need when something happens in the wrong ord
 
 | | |
 |---|---|
-| **Agent** | whatever is calling your tools: the browser's own agent, an in-page chat, or an external MCP client ([diagram 2](#2-how-an-agent-discovers-the-tools)) |
+| **Agent** | whatever is calling your tools: the browser's own agent, an in-page chat, or an external MCP client ([diagram 2](#2-a-user-asks-the-agent-to-do-something)) |
 | **modelContext** | `document.modelContext` — native or polyfill |
 | **webmcp-angular** | `declareWebMcpTool` / `provideWebMcpTools` and the adapter |
 | **Injector** | the Angular injector that owns a tool's lifetime |
@@ -55,44 +55,59 @@ sequenceDiagram
 finds no `document.modelContext`, returns early, and says nothing. You get a working
 app with no tools and no error. That is the single most common setup mistake.
 
-## 2. How an agent discovers the tools
+## 2. A user asks the agent to do something
 
-Registration (diagram 1) puts your tools on `document.modelContext`. An agent reads
-them from there.
+`getTools()` is not something an agent does on a timer. It reads the list because a
+**user asked it for something** and it needs to know what this page can do.
+
+Here is the whole arc, end to end:
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant MC as document.modelContext
+    participant User
     participant Agent
+    participant MC as document.modelContext
+    participant App as Your app
 
-    Note over MC: Holds the tools registered during bootstrap.
+    Note over MC,App: Tools registered during bootstrap — diagram 1.
 
+    User->>Agent: "add two blue shirts to my cart"
+    Note over Agent: Needs to know what this page can do.
     Agent->>MC: getTools()
-    MC-->>Agent: [{ name, description, inputSchema }, …]
-    Note over Agent: Picks one using name + description.<br/>It cannot see your UI.
-    Agent->>MC: executeTool(chosen, args)
+    MC-->>Agent: [ search_products, add_to_cart, get_cart, … ]
+    Note over Agent: Picks by name + description.<br/>It cannot see your UI.
+
+    Agent->>MC: executeTool(add_to_cart, {"sku":"SHIRT-BL-M","qty":2})
+    MC->>App: execute(args, { signal })
+    App-->>MC: "Added 2 × SHIRT-BL-M. Cart now has 2 items."
+    MC-->>Agent: (same text)
+
+    Agent->>User: "Added two blue shirts — your cart has 2 items."
 ```
 
-Everything the agent knows about your app is the text you wrote, which is why
+Steps 3–4 are the discovery. They happen **because of step 1**, not on a schedule.
+
+Everything the agent knows about your app is the text you wrote — step 5 is a choice
+made purely from `name` and `description`, which is why
 [descriptions matter](../guide/02-writing-tools.md#write-descriptions-for-someone-who-cant-see-your-ui).
 
-### When the read happens
+Steps 6–9 are the tool call itself. [Diagram 3](#3-inside-a-tool-call) zooms into them.
 
-Three kinds of agent sit in that lane, and they read at different moments:
+### The same arc, for the three kinds of agent
 
-| | Where it runs | When it calls `getTools()` |
+Who plays the *Agent* lane changes where the trigger comes from, but not the shape:
+
+| | Trigger for `getTools()` | Notes |
 |---|---|---|
-| **The browser's built-in agent** | outside the page | on its own schedule — typically when the user asks it to do something |
-| **In-page code** — a chat panel, the inspector | in your page | when you call it; once per user turn is the right cadence |
-| **An external MCP client** — Claude Desktop, Cursor | another process | on `tools/list` through [the bridge](#7-reaching-an-agent-outside-the-page), then again on `notifications/tools/list_changed` |
+| **The browser's built-in agent** | the user asks it something, in the browser's own UI | you never see the read; the first thing your app observes is step 7 |
+| **In-page code** — a chat panel, the inspector | the user sends a message, or opens the panel | you write this, so you choose the moment |
+| **An external MCP client** — Claude Desktop, Cursor | the client's own `tools/list`, through [the bridge](#7-reaching-an-agent-outside-the-page) | refreshed when you push `notifications/tools/list_changed` |
 
-Your code is not notified when a read happens. The first thing your app observes is a
-tool actually executing — diagram 3.
+### Cadence, when you control the agent
 
-### An in-page chat, turn by turn
-
-This is the case you control, so it is worth seeing in full:
+An in-page chat is the case you write yourself, so the cadence is your decision.
+**Once per user turn** is the right one:
 
 ```mermaid
 sequenceDiagram
@@ -114,14 +129,14 @@ sequenceDiagram
     LLM-->>Chat: final answer
 ```
 
-Fetch **once per user turn**: the list is live, and the user may have navigated since
-the last message and gained or lost tools (diagram 5). Fetching again between the
-tool calls *within* a turn is waste — it cannot change mid-turn.
+Per turn, because the list is live: the user may have navigated since their last
+message and gained or lost tools (diagram 5). Not again between the tool calls
+*within* a turn — it cannot change mid-turn, so that would be waste.
 
 ### Keeping a long-lived consumer current
 
-A consumer that holds the list — a panel, a connected MCP client — listens for
-`toolchange` and refetches:
+Something that holds the list across turns — a panel, a connected MCP client —
+listens for `toolchange` and refetches:
 
 ```ts
 const refresh = () => { /* getTools() again */ };
@@ -133,7 +148,10 @@ document.modelContext?.addEventListener?.('toolchange', refresh);   // ← both
 Listen on both targets. The spec dispatches on the document; the polyfill dispatches
 only on the ModelContext ([chapter 6 §8](./06-what-bites-you.md)).
 
-## 3. A read-only call
+## 3. Inside a tool call
+
+Steps 6–9 of diagram 2, with the machinery that sits between the browser and your
+service.
 
 ```mermaid
 sequenceDiagram
