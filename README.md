@@ -1,155 +1,114 @@
 # webmcp-angular
 
-An **API-compatible backport of Angular v22's experimental [WebMCP](https://angular.dev/ai/webmcp) support** for Angular 20 and 21.
+Expose your Angular app's features to AI agents, as typed functions they can call.
 
-WebMCP is a [W3C Web Machine Learning CG draft](https://webmachinelearning.github.io/webmcp/) that lets a page expose typed, callable tools to AI agents through `document.modelContext`. Angular v22 ships first-party support. This package brings that same API to Angular 20+.
-
-## The governing rule
-
-> **Everything in this package exists to be deleted.**
-
-Success is not "the best Angular WebMCP library." It is: *the day your app reaches Angular 22, swapping `webmcp-angular` for `@angular/core` changes no application code except imports.*
-
-```ts
-import { provideExperimentalWebMcpTools } from 'webmcp-angular';
-// at Angular 22 ──▶
-import { provideExperimentalWebMcpTools } from '@angular/core';
-```
-
-And you do not have to do it by hand:
+An **API-compatible backport of Angular 22's experimental [WebMCP][ng-webmcp] support
+for Angular 20 and 21** — plus a test harness, a dev inspector, and a bridge to
+desktop MCP clients, none of which Angular provides.
 
 ```bash
-ng generate webmcp-angular:migrate --dry-run
+npm install webmcp-angular @mcp-b/webmcp-polyfill
 ```
 
-It rewrites core imports, reports anything from a non-core entry point instead of
-guessing, and removes the dependency only once nothing is left unresolved.
+## What it looks like
 
-Every symbol in the **core** entry point is signature-identical to `@angular/core` v22 — including [a known upstream typing defect](https://github.com/angular/angular/issues/70125), which is reproduced deliberately rather than fixed, because a "better" signature that accepts code v22 rejects is a migration trap.
+```ts
+provideExperimentalWebMcpTools([
+  {
+    name: 'add_to_cart',
+    description: 'Add a product to the cart. Use the SKU shown on the product page.',
+    inputSchema: {
+      type: 'object',
+      properties: { sku: { type: 'string' }, qty: { type: 'integer', minimum: 1 } },
+      required: ['sku', 'qty'],
+    },
+    execute: ({ sku, qty }) => {
+      const cart = inject(CartService);     // your existing service
+      cart.add(sku, qty);
+      return `Added ${qty} × ${sku}. Cart now has ${cart.count()} items.`;
+    },
+  },
+])
+```
 
-Additive ideas live in separate, clearly-marked entry points that you opt into knowing they won't survive the migration.
+An agent can now add things to the cart — by calling your function, not by guessing
+where to click. `CartService` knows nothing about any of this.
+
+**→ [Getting started](./docs/guide/01-getting-started.md)** walks through it properly,
+including the polyfill step you can't skip.
+
+## Documentation
+
+| | |
+|---|---|
+| **[Using webmcp-angular](./docs/guide/README.md)** | Install, write tools, scope them, test them, ship them |
+| **[API reference](./docs/guide/api-reference.md)** | Every export, by entry point |
+| **[How WebMCP works](./docs/architecture/README.md)** | A short course on the browser API and the Angular integration — plus a [diagrammed visual guide](https://claude.ai/code/artifact/190f4737-c9ea-4892-aa2b-f9c854716f83) |
+
+There's also a [runnable sample app](../webmcp-angular-playground) — tic-tac-toe an
+agent can play, page-scoped tools, a chat panel, and the inspector.
 
 ## Entry points
 
-| Entry point | Migrates to v22? | Contents |
+| | Survives migration to v22? | |
 |---|---|---|
-| `webmcp-angular` | ✅ identical surface | `declareExperimentalWebMcpTool`, `provideExperimentalWebMcpTools`, types |
-| `/strict` | ❌ remove on migrate | `webMcpTool()` identity helper mitigating angular#70125 |
-| `/polyfill` | ❌ remove on migrate | `installWebMcpPolyfill()` — installs `document.modelContext` where the browser has none |
-| `/bridge` | ❌ no v22 equivalent | `createWebMcpBridge()` — MCP over JSON-RPC 2.0, so tools reach Claude Desktop / Cursor via an extension or the MCP-B relay |
-| `/devtools` | ❌ dev only | `mountWebMcpDevtools()` — floating inspector: live tool list, schemas, invoke by hand |
-| `/testing` | ❌ test only | `installWebMcpTestHarness()` — assert on what your app exposes, with no browser |
+| `webmcp-angular` | ✓ identical surface | `declareExperimentalWebMcpTool`, `provideExperimentalWebMcpTools`, types |
+| `/strict` | — type-level no-op | `webMcpTool()`, working around [angular#70125][issue] |
+| `/polyfill` | — keep | `installWebMcpPolyfill()` |
+| `/testing` | — keep | test harness; Angular ships none |
+| `/devtools` | — keep | inspector; Angular ships none |
+| `/bridge` | — keep | MCP over JSON-RPC, so Claude Desktop and Cursor can reach your tools |
 
-`/bridge` is the one genuinely additive capability Angular has no plan for, and the only reason this package might outlive the migration.
+The core entry point is signature-identical to `@angular/core` v22 on purpose — right
+down to [reproducing a known upstream typing defect][issue], because a "fixed"
+signature would accept code that v22 rejects. Migrating is a change of import path,
+and [a schematic does it for you](./docs/guide/06-migrating-to-angular-22.md).
 
-## Status
+## Requirements
 
-`declareExperimentalWebMcpTool` and `provideExperimentalWebMcpTools` are **implemented and verified against `@angular/core@22.1.6`** — behaviourally, by a parity suite that runs one spec against both this implementation and Angular's own, and structurally, by a `.d.ts` diff. See `parity/README.md`.
+- Angular **20, 21 or 22**. On 22 you can use `@angular/core` directly.
+- A browser with WebMCP, or the polyfill. No browser ships it unflagged yet.
 
-```
-✔ 12/12  ours @ Angular 20        ✔ 5/5 declarations match @angular/core@22.1.6
-✔ 12/12  ours @ Angular 21
-✔ 24/24  ours + @angular/core @ Angular 22
-```
-
-Verified in a real browser via the sibling [`webmcp-angular-playground`](../webmcp-angular-playground):
-tools register, execute, and unregister on navigation. Hardened for server rendering and
-for browsers with no WebMCP at all — `npm run check:packaging` packs the library, installs
-the **tarball** into a real Angular SSR app and prerenders it.
-
-### Known limitation: route-level providers
+## Known limitation
 
 Tools registered through a route's `providers` array **are not unregistered when you
-navigate away** on Angular 20 and 21 — measured, not assumed (`docs/M0-FINDINGS.md` §7).
-The route's environment injector outlives the route; Angular 22 fixes this with
-`withExperimentalAutoCleanupInjectors()`, which cannot be backported (its
-`RouterFeature` kind is a v22 enum value).
+navigate away** on Angular 20 and 21 — measured, not assumed. Declare page-scoped
+tools in the routed component instead; that cleans up correctly on every version.
+[Details](./docs/guide/03-scoping-tools.md#️-route-level-providers-leak-before-angular-22).
 
-Declare page-scoped tools with `declareExperimentalWebMcpTool()` in the routed
-component instead — that cleans up correctly on every supported version.
+## Stability
 
-Testing your own tools needs no browser:
+WebMCP is a [W3C Community Group draft][spec] and Angular's support is
+`@experimental` — the API may change outside a major version, and already has twice.
+This package is `0.x` and tracks it. Pin the version.
 
-```ts
-import {installWebMcpTestHarness} from 'webmcp-angular/testing';
-
-const webmcp = installWebMcpTestHarness();
-afterEach(() => webmcp.uninstall());
-
-expect(webmcp.has('add_to_cart')).toBe(true);
-expect(await webmcp.invoke('add_to_cart', {sku: 'A1', qty: 2})).toEqual({ok: true});
-```
-
-And the same tools can be exposed to MCP clients outside the page:
-
-```ts
-import {createWebMcpBridge} from 'webmcp-angular/bridge';
-
-createWebMcpBridge({allowedOrigins: [window.location.origin]}).start();
-```
-
-WebMCP itself has no wire format — `document.modelContext` is an in-page API for the
-browser's own agent. The bridge speaks MCP over JSON-RPC 2.0 in postMessage envelopes
-compatible with `@mcp-b/transports`, so an extension or the local relay can reach your
-tools. **This is the one capability with no Angular 22 equivalent**, and the reason
-this package might outlive the migration.
-
-And there is an inspector for development:
-
-```ts
-import {isDevMode} from '@angular/core';
-
-if (isDevMode()) {
-  const {mountWebMcpDevtools} = await import('webmcp-angular/devtools');
-  mountWebMcpDevtools();     // Ctrl/Cmd + Shift + M
-}
-```
-
-Live tool list, schemas, arguments prefilled from the schema so running a tool is one
-click, and a call log. It floats bottom-right by default; pass another corner if your
-app already uses that one, or `{position: 'inline', container}` to dock it into your
-own layout as a real panel. It mounts in a shadow root so it cannot restyle — or be
-restyled by — the app it is inspecting. The **dynamic** import keeps it out of your
-initial bundle: measured on a production build it lands in its own lazy chunk
-(~8.6 kB raw, ~3 kB transfer) that is emitted but never downloaded, because
-`isDevMode()` is false and the import never runs.
-
-Not yet done: `ng add`. See `docs/PLAN.md` §6.
-
-## Learning the architecture
-
-`docs/architecture/` is a six-chapter course on how WebMCP works, how Angular wires
-into it, and the nine things that bite — every claim verified against shipped sources,
-and the measured ones labelled as such. There is a
-[diagrammed visual guide](https://claude.ai/code/artifact/190f4737-c9ea-4892-aa2b-f9c854716f83)
-alongside it.
-
-## Layout
-
-```
-projects/webmcp-angular/   the library (5 entry points)
-parity/                      the M3 release gate — spec suite + .d.ts diff
-fixtures/ssr-consumer/       real Angular SSR app, prerendered against the tarball
-scripts/check-packaging.mjs  packs, installs the tarball, prerenders, asserts
-projects/…/schematics/       ng generate webmcp-angular:migrate
-docs/architecture/           a six-chapter course on the architecture, + visual guide
-docs/PLAN.md                 requirements, architecture, milestones, risks
-docs/M0-FINDINGS.md          verified findings + corrections to the plan
-```
+A parity suite runs the same spec against this implementation and against
+`@angular/core` v22, across an Angular 20/21/22 matrix, plus a `.d.ts` diff — weekly,
+so upstream drift surfaces on a Monday rather than mid-migration.
 
 ## Development
 
 ```bash
 npm install
-npx ng build webmcp-angular     # builds all 5 entry points to dist/
-npm run verify                    # everything: .d.ts diff, spec suite on Angular 20/21/22,
-                                  # SSR + unsupported-browser specs, tarball/prerender check
-npm run check:packaging           # just the tarball install + SSR prerender
-# the showcase app is a sibling repo: ../webmcp-angular-playground
+npm run build:lib          # all entry points + schematics → dist/
+npm run verify             # .d.ts diff, spec suite on 20/21/22, SSR + packaging checks
+npm run check:packaging    # pack the tarball, install it in a real SSR app, prerender
 ```
 
-Native WebMCP currently requires Chromium with `--enable-features=WebMCP`. Without it the library degrades to a no-op with one dev-mode warning — it never throws.
+```
+projects/webmcp-angular/     the library
+parity/                      the compatibility gate — spec suite + .d.ts diff
+fixtures/ssr-consumer/       real Angular SSR app, prerendered against the tarball
+docs/guide/                  how to use it
+docs/architecture/           how it works
+docs/PLAN.md                 requirements, milestones, risks
+docs/M0-FINDINGS.md          verified findings, with evidence
+```
 
 ## License
 
 MIT
+
+[ng-webmcp]: https://angular.dev/ai/webmcp
+[spec]: https://webmachinelearning.github.io/webmcp/
+[issue]: https://github.com/angular/angular/issues/70125
