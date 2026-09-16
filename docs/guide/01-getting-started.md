@@ -144,7 +144,9 @@ skips `runInInjectionContext` and breaks every `inject()` in the body. Call tool
 Expected if you scoped them to a route — see [chapter 3](./03-scoping-tools.md).
 
 A fuller symptom index lives in
-[the architecture course](../architecture/06-what-bites-you.md).
+[the architecture course](../architecture/06-what-bites-you.md), and
+[the sequence diagrams](../architecture/07-lifecycle-sequence.md) show the whole
+lifecycle on one timeline — useful when something is happening in the wrong order.
 
 ---
 

@@ -195,4 +195,7 @@ When a tool is not behaving, in order:
 
 ---
 
+next: [The full sequence →](./07-lifecycle-sequence.md) — every exchange on one
+timeline, which is often the fastest way to see where an ordering went wrong.
+
 [← back to contents](./README.md)

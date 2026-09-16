@@ -43,8 +43,10 @@ The agent never touches the DOM. It calls a function you wrote.
 | 4 | [Scope and navigation](./04-scope-and-navigation.md) | App, route and component scope — and the one that leaks |
 | 5 | [Getting tools out of the page](./05-transports.md) | Native, polyfill, and the JSON-RPC bridge to desktop MCP clients |
 | 6 | [What bites you](./06-what-bites-you.md) | Nine things measured the hard way, with the evidence |
+| 7 | [The full sequence](./07-lifecycle-sequence.md) | Every exchange on one timeline — page load, calls, navigation, cancellation, teardown |
 
-If you only read two, read **2** and **6**.
+If you only read two, read **2** and **6**. If you prefer to see the whole thing at
+once before reading any of it, start with **7**.
 
 ## Also here
 
