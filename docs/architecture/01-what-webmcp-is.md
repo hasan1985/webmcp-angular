@@ -57,7 +57,9 @@ two things, and the difference is *where the code that calls your tools runs*.
 from `document.modelContext`, sends them to an LLM through an API call it makes
 itself, runs whatever the model asks for, and shows the answer. Nothing leaves the
 page except that API call. This is the main case for most apps, and the playground's
-chat. It needs the core and the polyfill, nothing else.
+chat. It needs the core and the polyfill, nothing else — the polyfill because even
+here the registry is the browser's object, not Angular's
+([chapter 2](./02-the-lifecycle.md#the-registry-is-the-browsers--even-when-the-agent-is-yours)).
 
 **External agent, via the browser.** The agent lives outside the page — an
 extension's content script, Claude Desktop, Cursor — and reaches in. It cannot see

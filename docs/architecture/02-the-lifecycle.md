@@ -129,6 +129,45 @@ tool would need its dependencies threaded in by hand.
 
 ⑦ The chain from the diagram, in one line.
 
+## The registry is the browser's — even when the agent is yours
+
+Read ③ again. If there is no `document.modelContext`, `declareWebMcpTool` returns.
+It keeps no list of its own; there is no `Map` of tools anywhere in Angular. The
+browser object *is* the registry, and Angular only wires a lifetime and an injection
+context around it.
+
+That answers a question that comes up as soon as an app has only an
+[in-page agent](./01-what-webmcp-is.md#two-kinds-of-agent) — a chat panel that calls
+the LLM itself, with no browser agent and no extension in the picture: *why do I
+still need `document.modelContext`, and therefore the polyfill?* Because without
+something at that address, `provideWebMcpTools` registers nothing and your chat's
+`getTools()` has nothing to read. The polyfill is not there for the browser's
+benefit; it is there because the API you are calling has nowhere else to put a tool.
+
+Three things could sit at that address:
+
+| | Angular's API works unchanged | Native migration stays imports-only | Browser agent and extension can see the tools | Tracks the draft |
+|---|---|---|---|---|
+| **Native Chrome** | yes | yes | yes | it is the draft |
+| **`@mcp-b/webmcp-polyfill`** | yes | yes | yes — native replaces it when present | yes |
+| **A shim of your own** (~60 lines: `registerTool`, `getTools`, `executeTool`, `toolchange`) | yes | yes | yes — same, if you install only when absent | freezes at what you wrote |
+
+And one thing that should not: **a registry of your own that is not at
+`document.modelContext`** — an Angular service the chat reads from. It would work,
+and it removes the polyfill; it also removes every row above. The core would no longer
+be Angular's code path, the migration would no longer be an import rewrite, and the
+browser's own agent would never see the tools. You would rebuild the lifetime chain,
+the injection-context wrapper and a `toolchange` equivalent against your own object,
+to arrive at a private copy of this chapter.
+
+So the decision that matters is *the address*, not *who provides the object*. The
+polyfill is the default because it tracks the draft — every shape change in
+[chapter 6](./06-what-bites-you.md) surfaced through it first — and because it is
+optional, lazy-loaded, and steps aside for native. A shim is a reasonable swap for an
+app that is certain it will only ever have an in-page agent; the chat's one adapter
+file is where the differences would land
+([decision 023](../decisions/023-registry-at-document-modelcontext.md)).
+
 ## The two registration paths
 
 `provideWebMcpTools` is a thin wrapper over the same function:

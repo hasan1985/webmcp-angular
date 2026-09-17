@@ -43,6 +43,7 @@ Nearly every record below is that rule applied to one question.
 | [020](./020-follow-the-contested-draft.md) | Follow the draft although WebKit opposes it | the cost is bounded either way |
 | [021](./021-no-discovery-beacon.md) | Do not add a page-side discovery beacon | it helps only once agents agree to listen, and none do |
 | [022](./022-bridge-opt-in.md) | The bridge is opt-in, off by default | the in-page agent never needs it; opening it is the operator's call |
+| [023](./023-registry-at-document-modelcontext.md) | The registry stays at `document.modelContext`, even for an in-page-only app | Angular keeps no list; the address is the decision, the polyfill is replaceable |
 
 ## How they connect
 
@@ -70,6 +71,8 @@ flowchart TD
     D020["020 follow the contested draft"] --> D021["021 no discovery beacon"]
     D012 --> D022["022 bridge opt-in"]
     D017 --> D022
+    D001 --> D023["023 registry at document.modelContext"]
+    D006 --> D023
     R --> D020
 ```
 

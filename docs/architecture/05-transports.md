@@ -55,6 +55,9 @@ order should always be:
 
 Native WebMCP is Chrome-only and flagged, so in practice you develop against
 `@mcp-b/webmcp-polyfill`, which installs a working `document.modelContext` anywhere.
+An in-page agent needs it as much as a browser agent does: Angular keeps no registry
+of its own, so without an object at that address nothing registers
+([chapter 2](./02-the-lifecycle.md#the-registry-is-the-browsers--even-when-the-agent-is-yours)).
 
 It must finish **before** tools register, which rules out doing it in a provider:
 

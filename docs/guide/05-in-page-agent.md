@@ -23,8 +23,14 @@ one needs nothing but the core and the polyfill.
 
 ## Why the registry, and not just an array of tools
 
-You could hand the model a hard-coded list. What `document.modelContext` gives you
-instead:
+First the mechanical reason: Angular keeps no list of tools. `declareWebMcpTool`
+writes into `document.modelContext` and returns silently if it is absent, so with
+nothing at that address `provideWebMcpTools` registers nothing — which is why the
+polyfill is required even with no browser agent anywhere near
+([architecture chapter 2](../architecture/02-the-lifecycle.md#the-registry-is-the-browsers--even-when-the-agent-is-yours)).
+
+Then the design reason. You could hand the model a hard-coded list. What
+`document.modelContext` gives you instead:
 
 - **Scope for free.** A tool declared in a routed component exists while that page
   is open. Read the live list each turn and the model sees only what applies *here,
