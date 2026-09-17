@@ -5,14 +5,17 @@
 Registration is half the story. Here is the other half: what actually happens between
 an agent deciding to call something and your service running.
 
-## The round trip
+## The round trip, in-page agent
+
+Your chat panel is the harness. It handed the model the tool list, the model
+answered with a name and arguments, and now the panel makes the call:
 
 ```
-  ┌─────────┐
-  │  AGENT  │  decides to call add_to_cart({sku: "A1", qty: 2})
-  └────┬────┘
-       │
-       ▼
+  ┌───────────────────┐
+  │  YOUR CHAT PANEL  │  model replied: call add_to_cart({sku: "A1", qty: 2})
+  └────────┬──────────┘
+           │  executeTool(tool, '{"sku":"A1","qty":2}')
+           ▼
   ┌──────────────────────────────────────────────────────────────────┐
   │  BROWSER   document.modelContext                                 │
   │            looks up the tool by name, JSON-parses the arguments  │
@@ -44,13 +47,67 @@ an agent deciding to call something and your service running.
   └────┬─────────────────────────────────────────────────────────────┘
        │
        ▼
-  ┌─────────┐
-  │  AGENT  │  reads "Added 2 × A1." and decides what to do next
-  └─────────┘
+  ┌───────────────────┐
+  │  YOUR CHAT PANEL  │  puts "Added 2 × A1." in a tool_result and sends it to the model
+  └───────────────────┘
 ```
 
 Nothing in that path touches the DOM, and the UI updates because your *service*
-changed — the same service the buttons use.
+changed — the same service the buttons use. The model made the decision at the top
+from a tool list it was handed, and reads the text at the bottom; the panel is the
+only thing that calls
+([chapter 7, diagram 2](./07-lifecycle-in-page-agent.md#2-a-user-asks-the-agent-to-do-something)).
+
+## The round trip, external agent
+
+The harness is an MCP client outside the page. Its call arrives as JSON-RPC and the
+bridge makes the `executeTool` call on its behalf:
+
+```
+  ┌────────────────────────────┐
+  │  MCP CLIENT                │  model replied: call add_to_cart({sku: "A1", qty: 2})
+  │  (Claude Desktop, Cursor)  │
+  └────────────┬───────────────┘
+               │  tools/call {name: "add_to_cart", arguments: {…}}     JSON-RPC
+               ▼
+  ┌────────────────────────────┐
+  │  RELAY                     │  extension content script — isolated world,
+  │                            │  cannot touch document.modelContext
+  └────────────┬───────────────┘
+               │  postMessage envelope                                  same window
+               ▼
+  ┌──────────────────────────────────────────────────────────────────┐
+  │  BRIDGE    webmcp-angular/bridge                                 │
+  │            checks origin and source, finds the tool by name      │
+  └────┬─────────────────────────────────────────────────────────────┘
+       │  executeTool(tool, '{"sku":"A1","qty":2}')
+       ▼
+  ┌──────────────────────────────────────────────────────────────────┐
+  │  BROWSER → ANGULAR'S WRAPPER → YOUR TOOL → BROWSER               │
+  │                                                                  │
+  │  identical to the in-page path above, step for step              │
+  └────┬─────────────────────────────────────────────────────────────┘
+       │  "Added 2 × A1."
+       ▼
+  ┌──────────────────────────────────────────────────────────────────┐
+  │  BRIDGE    wraps it: {content: [{type: "text", text}], isError}  │
+  └────────────┬─────────────────────────────────────────────────────┘
+               │  postMessage envelope → relay → JSON-RPC response
+               ▼
+  ┌────────────────────────────┐
+  │  MCP CLIENT                │  puts the text in a tool_result and sends it to the model
+  └────────────────────────────┘
+```
+
+Two hops on the way in and two on the way out; the box in the middle is the same
+code. A rejected call comes back as a *successful* JSON-RPC response with
+`isError: true`, so the model reads the reason exactly as an in-page model would
+([chapter 5](./05-transports.md#one-mcp-convention-worth-copying)). The full
+session around this call — how the relay got there, `initialize`, `tools/list` — is
+[chapter 8](./08-lifecycle-external-agent.md).
+
+From `document.modelContext` down, the two agents are indistinguishable. Everything
+in the rest of this chapter applies to both.
 
 ## The signatures, precisely
 
@@ -147,6 +204,26 @@ right, top to bottom" is the difference between a working tool and a confused on
 
 **Read before you write.** Give agents a cheap read-only tool (`get_board`,
 `list_notes`) so they can orient themselves instead of guessing. They will use it.
+
+**Put app-wide context in a tool of its own.** `description` is per tool, and the
+draft has no equivalent of MCP's server-level `instructions`. What is true of the app
+as a whole — which pages exist, which tools come and go with them, the conventions
+every tool shares — fits nowhere in the list, so publish it as a cheap read-only tool
+whose description says to read it first:
+
+```ts
+{
+  name: 'about_this_app',
+  description: 'Read this before using the other tools: what this app is, and the conventions its tools share.',
+  inputSchema: {type: 'object', properties: {}},
+  execute: () => APP_CONTEXT,   // a few hundred characters of plain text
+}
+```
+
+Only the one-line description rides in `getTools()` on every turn; the body travels
+once, when an agent reads it. Because it is an ordinary tool, every consumer gets it —
+the browser's agent, an in-page chat, an MCP client through the bridge — with no extra
+plumbing. The playground's `about_this_app` is the worked example.
 
 **Return failures as text.** Covered in [chapter 1](./01-what-webmcp-is.md), and it
 is the single highest-leverage habit:

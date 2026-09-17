@@ -90,7 +90,7 @@ export async function declareWebMcpTool<
  *
  * MIRRORS: `@angular/core` v22 `provideWebMcpTools`, including the
  * un-awaited call below — a duplicate tool name surfaces as an unhandled promise
- * rejection, exactly as it does upstream. See `docs/M0-FINDINGS.md` §2.4.
+ * rejection, exactly as it does upstream. See `docs/history/M0-FINDINGS.md` §2.4.
  */
 export function provideWebMcpTools<
   const InputSchema extends JsonSchemaForInference,

@@ -1,4 +1,4 @@
-[← migrating](./06-migrating-to-angular-22.md) · [contents](./README.md)
+[← migrating](./08-migrating-to-angular-22.md) · [contents](./README.md)
 
 # API reference
 
@@ -102,9 +102,10 @@ interface ResolvedModelContext { source: ModelContextSource; modelContext: Model
 ```
 
 `normalizeInputSchema` handles both generations of `getTools()` output —
-`inputSchema` is a JSON **string** on Chrome 149–153 and an **object** from
-154.0.8013 onward. `displayTitle` exists because the spec defaults `title` to `''`
-rather than omitting it, so `??` doesn't fall through.
+`inputSchema` was a JSON **string** before webmcp#241 and is an **object** after it;
+Chrome's origin-trial builds still return the string for same-document tools.
+`displayTitle` exists because Chrome and the polyfill return `title: ''` for a tool
+registered without one, so `??` doesn't fall through.
 
 ---
 
@@ -165,7 +166,7 @@ type WebMcpDevtoolsPosition =
 ```
 
 Load it with a **dynamic** import behind `isDevMode()` — see
-[chapter 5](./05-inspecting-and-connecting.md#keep-it-out-of-your-bundle).
+[chapter 7](./07-inspecting.md#keep-it-out-of-your-bundle).
 
 ---
 
@@ -178,8 +179,8 @@ const DEFAULT_CHANNEL_ID = 'mcp-default';
 const PROTOCOL_VERSION = '2025-11-25';
 ```
 
-`allowedOrigins` is required. See
-[chapter 5](./05-inspecting-and-connecting.md#the-bridge).
+`allowedOrigins` is required. Keep it **opt-in** — see
+[chapter 6](./06-external-agents.md#make-it-opt-in).
 
 ---
 
@@ -189,7 +190,7 @@ const PROTOCOL_VERSION = '2025-11-25';
 ng generate webmcp-angular:migrate [--dry-run] [--path=<dir>]
 ```
 
-See [chapter 6](./06-migrating-to-angular-22.md).
+See [chapter 8](./08-migrating-to-angular-22.md).
 
 ---
 

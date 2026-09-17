@@ -95,15 +95,17 @@ Measured in Chrome on Angular 20.3.31, with a probe route registering `probe_lea
    back to /game      →  add_note, list_notes gone       ← component scope is fine
 ```
 
-Angular 22 fixes this with a router feature:
+The router fixes this with an opt-in feature:
 
 ```ts
 provideRouter(routes, withExperimentalAutoCleanupInjectors())
 ```
 
-which destroys route-level environment injectors on navigation. It cannot be
-backported — `RouterFeatureKind` is a numeric enum and the value is a v22 addition, so
-a v20 router cannot be handed a valid feature object.
+which destroys route-level environment injectors on navigation. `@angular/router`
+ships it from **21.1.0** — absent in 20.x and 21.0, present in 21.1, 21.2 and 22
+(verified against the published packages). It cannot be recreated for an older
+router: `RouterFeatureKind` is a numeric enum and the router only acts on kinds it
+knows.
 
 ### What to do instead
 
@@ -122,11 +124,11 @@ The component is created and destroyed by the router already, so its lifetime is
 route's lifetime in every version that matters. You lose nothing.
 
 ```
-            route providers                    component constructor
-            ──────────────                     ─────────────────────
-   v20/21   ✗ leaks on navigation              ✓ cleans up
-   v22      ✓ with withExperimental…()          ✓ cleans up
-                                                ↑ works everywhere, choose this
+                 route providers                    component constructor
+                 ──────────────                     ─────────────────────
+   20.x, 21.0    ✗ leaks on navigation              ✓ cleans up
+   21.1+, 22     ✓ with withExperimental…()          ✓ cleans up
+                                                     ↑ works everywhere, choose this
 ```
 
 ## Conditional tools
@@ -154,25 +156,65 @@ export class CheckoutDialog {
 The general move: **find the thing whose lifetime you actually mean, and attach
 there.** If nothing has that lifetime, create an injector that does.
 
+## Cross-origin: `exposedTo`
+
+`registerTool`'s second option is for pages made of more than one document. A tool
+is visible to the document that registered it. `exposedTo` opens it to other documents
+in the same tab — a parent page reading tools out of an embedded widget, or the other
+way round:
+
+```ts
+declareWebMcpTool(tool);   // Angular passes {signal} only — visible to this document
+
+document.modelContext.registerTool(tool, {
+  signal,
+  exposedTo: ['https://shop.example'],   // that document may list and call it too
+});
+```
+
+Origins must be potentially trustworthy (`https:`, or localhost), or registration
+rejects with `SecurityError`. Access to the API inside a frame is also gated by the
+`tools` permissions policy, whose default allowlist is `'self'` — a cross-origin
+`<iframe>` needs `allow="tools"` before its own `document.modelContext` does anything.
+
+`declareWebMcpTool` sets `signal` and nothing else, so for a cross-origin tool call
+`registerTool` yourself and wire the `DestroyRef → AbortController` chain from
+[chapter 2](./02-the-lifecycle.md) by hand.
+
+### Which agent this concerns
+
+`exposedTo` scopes by **document**, and it matters only when a tab holds more than
+one:
+
+| Agent | Meets `exposedTo` when |
+|---|---|
+| **Browser's own agent** | always, in a multi-frame tab — its observation covers every frame, and the option decides which frames' tools it may pass to a caller |
+| **In-page agent** | its chat runs in one frame and the tool was registered in another — the parent calls `getTools({fromOrigins: [...]})` and sees only tools exposed to it |
+| **External agent** | never through the bridge — the bridge reads the one document it runs in, with no `fromOrigins`, and a frame's tools are reached by a bridge in that frame |
+
+So it says which *documents* may see a tool. Which *agents* may is a different
+question, and one the draft leaves alone —
+[chapter 9](./09-will-this-be-standardised.md#the-discovery-gap) takes it up.
+
+Under the polyfill both options are rejected with `NotSupportedError`
+([chapter 10](./10-inside-the-polyfill.md#registertool)); cross-document tools are
+native-only today.
+
 ## Observing changes
 
-Every registration and unregistration fires a `toolchange` event, so a panel or a
-connected client can stay current:
+Every registration and unregistration fires a `toolchange` event **at the
+ModelContext object**, so a panel or a connected client can stay current:
 
 ```ts
-document.addEventListener('toolchange', () => refreshToolList());
+document.modelContext.addEventListener('toolchange', () => refreshToolList());
+// or: document.modelContext.ontoolchange = () => refreshToolList();
 ```
 
-⚠️ With one large caveat — `@mcp-b/webmcp-polyfill` dispatches `toolchange` **only on
-the ModelContext object**, never on the document. Listen to both, or your listener
-will never fire on a polyfilled page:
-
-```ts
-document.addEventListener('toolchange', handler);
-document.modelContext?.addEventListener?.('toolchange', handler);
-```
-
-That one is measured, and cost a real bug. It is [chapter 6](./06-what-bites-you.md) §8.
+The target is the `ModelContext`, not the document — that is where the draft fires it
+and where `@mcp-b/webmcp-polyfill` fires it. This project first listened on the
+document and heard nothing; the story is [chapter 6](./06-what-bites-you.md) §7. The
+library's own listeners now attach to both targets, so a document-level dispatch, should
+an implementation add one, is heard as well.
 
 ---
 

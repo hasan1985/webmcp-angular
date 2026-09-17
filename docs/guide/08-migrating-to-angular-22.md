@@ -1,4 +1,4 @@
-[← inspecting and connecting](./05-inspecting-and-connecting.md) · [contents](./README.md) · next: [API reference →](./api-reference.md)
+[← inspecting](./07-inspecting.md) · [contents](./README.md) · next: [API reference →](./api-reference.md)
 
 # 6. Migrating to Angular 22
 
@@ -100,9 +100,10 @@ Worth picking up once you're there:
 provideRouter(routes, withExperimentalAutoCleanupInjectors())
 ```
 
-The [route-provider leak](./03-scoping-tools.md#️-route-level-providers-leak-before-angular-22)
-is fixed by this. If you worked around it with component-scoped tools, you can keep
-them as they are — they still work, and arguably read better.
+The [route-provider leak](./03-scoping-tools.md#route-level-providers-leak-unless-cleanup-is-switched-on)
+is fixed by this — and you don't have to wait for 22: the feature is in
+`@angular/router` from 21.1. If you worked around it with component-scoped tools, you
+can keep them as they are — they still work, and arguably read better.
 
 **Signal Forms can generate a tool for you.**
 

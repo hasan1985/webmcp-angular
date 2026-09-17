@@ -1,5 +1,12 @@
 # M0 — Fidelity findings (CLOSED)
 
+> **Historical, but still cited.** The research log from September 2026, kept as
+> written: source comments and CI scripts reference its section numbers (§1.1, §2.4,
+> §3, §6.1, §7, §8), so the numbering is frozen. Where a finding was later corrected
+> the correction is added inline and dated — see §6.4 — never edited away. The
+> conclusions live on in [`decisions/`](../decisions/README.md) and the
+> [architecture course](../architecture/README.md).
+
 Verified against real shipped sources, not documentation prose.
 
 | Source | Version |
@@ -10,7 +17,7 @@ Verified against real shipped sources, not documentation prose.
 | `@mcp-b/webmcp-types` | 5.1.0 (deps `@modelcontextprotocol/server` 2.0.0) |
 
 **M0 §5 of the previous revision is now closed.** Every item is answered below.
-`docs/PLAN.md` §2 was inferred from documentation and was wrong in four places.
+[`PLAN.md`](./PLAN.md) §2 was inferred from documentation and was wrong in four places.
 
 ---
 
@@ -343,6 +350,17 @@ teardown has to delete from `Document.prototype` directly
 This also explains a correct-but-surprising result: calling `installWebMcpPolyfill()`
 twice returns `'polyfill'` then `'native'`. Once anything implements the API, the
 helper's job is to leave it alone, whoever installed it.
+
+**Correction, 16 September 2026.** Re-measured against the shipped 5.1.0 `dist` in a
+clean jsdom: `cleanupWebMCPPolyfill()` *does* remove the `Document.prototype` getter
+(`document.modelContext` → `undefined`, `Object.hasOwn(Document.prototype,
+'modelContext')` → `false`). The source records every property it installs and
+restores them in reverse. What it cannot remove is a `modelContext` that existed
+before install — it skips an existing key and records nothing — which is the state
+a shared vitest environment is in once the test harness or an earlier spec has
+defined one. The teardown in `polyfill.spec.ts` is still correct; the reason is
+"other installers in the same realm", not the polyfill. Detail in architecture
+chapter 9.
 
 ### 6.5 What M4 now covers, and what it still does not
 

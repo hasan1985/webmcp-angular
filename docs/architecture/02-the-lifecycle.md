@@ -13,6 +13,7 @@ The spec has **no `unregisterTool`**. Look at the whole interface again:
 interface ModelContext extends EventTarget {
   registerTool(tool, options?): Promise<void>;
   getTools(options?): Promise<RegisteredTool[]>;
+  executeTool(tool, inputObject?, options?): Promise<string>;
   ontoolchange: ((event: Event) => unknown) | null;
 }
 ```
@@ -103,6 +104,12 @@ Seven things worth naming:
 
 ① **Server renders do nothing, silently.** No warning, no throw. A `ReferenceError`
 here would take down the whole page's server render, not just the tools.
+
+This package checks `typeof document === 'undefined'` at the same spot: the
+`ngServerMode` build global is not reliably defined before v22, and the absence of a
+document is the same fact seen from the other side. Same outcome — the browser API is
+never touched while prerendering
+([diagram 8](./07-lifecycle-in-page-agent.md#8-and-on-the-server-nothing-happens)).
 
 ② Resolution order is `document` then `navigator` — the latter is the deprecated
 Chrome 149 spelling.

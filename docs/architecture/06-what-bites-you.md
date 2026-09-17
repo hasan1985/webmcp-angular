@@ -1,9 +1,10 @@
-[← getting tools out of the page](./05-transports.md) · [contents](./README.md)
+[← getting tools out of the page](./05-transports.md) · [contents](./README.md) · next: [The full sequence: in-page agent →](./07-lifecycle-in-page-agent.md)
 
 # 6. What bites you
 
-Nine things this project got wrong, then measured. Each one cost real debugging time,
-and none of them announce themselves — the failure mode for most is *silence*.
+Eight things that cost anyone using WebMCP from Angular real debugging time, each checked against source
+or measured. None of them announce themselves — the failure mode for most is
+*silence*.
 
 Use this as a symptom index.
 
@@ -42,7 +43,7 @@ that renders twice at once — two instances, two registrations, one collision.
 
 ---
 
-## 3. Route-level `providers` leak before Angular 22
+## 3. Route-level `providers` leak, unless you opt in to cleanup
 
 **Symptom:** tools from a page you left are still in the list.
 
@@ -53,22 +54,36 @@ Measured in Chrome on Angular 20.3.31:
 | Route `providers` | **still registered** |
 | Component constructor | correctly gone |
 
-**Do:** declare page-scoped tools in the routed component. On v22 you may instead use
-`provideRouter(routes, withExperimentalAutoCleanupInjectors())`. See
-[chapter 4](./04-scope-and-navigation.md).
+The router destroys route-level environment injectors only with
+`withExperimentalAutoCleanupInjectors()`, which `@angular/router` ships from
+**21.1.0** (verified: absent in 21.0.0, present in 21.1.0 and 22). On 20.x and 21.0
+there is no such feature.
+
+**Do:** declare page-scoped tools in the routed component — works on every version.
+On 21.1+ you may instead add the router feature. See
+[chapter 4](./04-scope-and-navigation.md#the-trap-route-level-providers).
 
 ---
 
-## 4. `executeTool` is not standard
+## 4. `executeTool` comes in two shapes, and is sometimes absent
 
 **Symptom:** `document.modelContext.executeTool is not a function` — usually in an
-in-page chat or a devtools panel.
+in-page chat or a devtools panel. Or a shape mismatch: passing an *object* to today's
+implementations fails with `UnknownError: Failed to parse input arguments` (WebIDL
+turns it into the string `[object Object]` first); passing a JSON *string* to an
+implementation with the draft's shape hands your tool a string where it expected an
+object.
 
-Only `registerTool`, `getTools` and `ontoolchange` are in the W3C draft. `executeTool`
-is on an optional Chromium extension interface.
+`executeTool` started as an optional Chromium extension, and the draft has since
+adopted it into `ModelContext` — taking an **object** of arguments, where Chrome's
+origin trial, `@mcp-b/webmcp-polyfill` and `@mcp-b/webmcp-types@5.1.0` all take a
+**JSON string** (the polyfill's parser is literally named `parseChromeToolInput`).
+Today's implementations have the string shape; the draft has the object shape; an
+implementation may also have neither.
 
-**Do:** feature-detect it, and say something useful when it is missing. The polyfill
-provides it, which is why in-page invocation works in development.
+**Do:** feature-detect it, invoke it from one place, and keep the argument
+serialization there, so that switching shape is a one-line change. The bridge and the
+devtools panel both go through a single call site.
 
 ---
 
@@ -77,9 +92,11 @@ provides it, which is why in-page invocation works in development.
 **Symptom:** `tools[0].inputSchema.properties` is `undefined`, but only on some
 Chrome builds.
 
-`getTools()` returns `inputSchema` as a **serialized JSON string** on Chrome 149–153
-— most of the current origin-trial population — and as an **object** from Chrome
-154.0.8013 onward ([webmcp#241](https://github.com/webmachinelearning/webmcp)).
+`getTools()` returned `inputSchema` as a **serialized JSON string** until
+[webmcp#241](https://github.com/webmachinelearning/webmcp/pull/241) changed it to an
+**object**. Chrome rolls that out from 154.0.8013, cross-document tools first; the
+origin-trial builds (149–156) still return the string for same-document tools, and the
+polyfill returns the object. Both generations are in the wild at once.
 
 **Do:** branch on `typeof` and guard the parse:
 
@@ -94,44 +111,29 @@ Only affects code *reading* tools back. Registration is unaffected.
 
 ---
 
-## 6. `title` defaults to `''`, so `??` does not save you
+## 6. `title` comes back as `''`, so `??` does not save you
 
 **Symptom:** blank labels in a tool list.
 
-The spec defaults `title` to the empty string rather than omitting it. `??` only falls
-through on `null`/`undefined`.
+Chrome and the polyfill return `title: ''` for a tool registered without one. The
+draft leaves the unset value to the implementation, and
+[webmcp#224](https://github.com/webmachinelearning/webmcp/issues/224) — still open —
+asks whether it should be omitted instead. `??` only falls through on
+`null`/`undefined`.
 
 **Do:** `tool.title || tool.name`.
 
 ---
 
-## 7. `file:` installs break secondary entry points
-
-**Symptom:** `TS7031: Binding element 'square' implicitly has an 'any' type` on tool
-arguments, with nothing pointing at the cause.
-
-`npm i file:../some/dist` creates a **symlink**. TypeScript resolves symlinks to their
-real path, so a secondary entry point importing the primary entry *by package name*
-cannot find it — and with `skipLibCheck` on (the Angular CLI default) the resolution
-failure is silent. The types degrade to `any`.
-
-**Do:** test against a packed tarball, which installs as a real directory:
-
-```bash
-cd dist/your-lib && npm pack --pack-destination /tmp
-cd ../../consumer && npm i /tmp/your-lib-0.0.1.tgz
-```
-
----
-
-## 8. `toolchange` does not fire where the spec says it does
+## 7. `toolchange` fires at the ModelContext, not the document
 
 **Symptom:** your tool list never refreshes on a polyfilled page — but `getTools()`
 returns correct results whenever you ask.
 
-The spec dispatches `toolchange` on the **document**. `@mcp-b/webmcp-polyfill` 5.1.0
-dispatches it **only on the ModelContext object**. Measured in Chrome across route
-changes:
+The draft fires `toolchange` at the document's **`ModelContext`** object —
+`ontoolchange` is an attribute of that interface — and `@mcp-b/webmcp-polyfill` 5.1.0
+does the same. This project's first bridge listened on the **document**. Measured in
+Chrome across route changes:
 
 | Listener | Times called |
 |---|---|
@@ -139,22 +141,24 @@ changes:
 | `modelContext.addEventListener('toolchange', …)` | 4 |
 | `modelContext.ontoolchange = …` | 4 |
 
-**Do:** listen on both.
+**Do:** listen on the ModelContext. The library attaches to both targets — the
+ModelContext because that is where it fires, the document as a no-cost hedge against
+an implementation that also dispatches there.
 
 ```ts
-document.addEventListener('toolchange', handler);
 document.modelContext?.addEventListener?.('toolchange', handler);
+document.addEventListener('toolchange', handler);
 ```
 
 > **The wider lesson.** This bug survived 20 passing tests, because the test fake
-> dispatched on *both* targets — faithful to the spec, and therefore **more generous
-> than the real implementation**. A fake more capable than reality hides exactly this
-> class of bug. Anything that depends on *where* an event fires, or on
-> `event.origin` / `event.source`, cannot be trusted from jsdom.
+> dispatched on *both* targets, so a listener on the wrong one still fired. A fake
+> more capable than reality hides exactly this class of bug. Anything that depends on
+> *where* an event fires, or on `event.origin` / `event.source`, cannot be trusted
+> from jsdom.
 
 ---
 
-## 9. Heterogeneous tool schemas do not type-check in one array
+## 8. Heterogeneous tool schemas do not type-check in one array
 
 **Symptom:** `Type '["square","player"]' is not assignable to type '[]'` from a
 `provideWebMcpTools([...])` call.
@@ -195,7 +199,7 @@ When a tool is not behaving, in order:
 
 ---
 
-next: [The full sequence →](./07-lifecycle-sequence.md) — every exchange on one
+next: [The full sequence →](./07-lifecycle-in-page-agent.md) — every exchange on one
 timeline, which is often the fastest way to see where an ordering went wrong.
 
 [← back to contents](./README.md)

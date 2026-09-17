@@ -59,7 +59,7 @@ The same call in a service constructor. Lifetime is the service's: `providedIn:
 'root'` gives you app scope; a service provided by a component gives you that
 component's.
 
-## ⚠️ Route-level `providers` leak before Angular 22
+## ⚠️ Route-level `providers` leak unless cleanup is switched on
 
 This looks like the obvious way to scope a tool to a route, and on Angular 20 and 21
 it's a bug:
@@ -83,20 +83,20 @@ back to /game    →  probe_leak STILL PRESENT        ← leaked
 back to /game    →  add_note, list_notes gone       ← correct
 ```
 
-Angular 22 fixes it with a router feature:
+The router fixes it with an opt-in feature, available from **Angular 21.1**:
 
 ```ts
 provideRouter(routes, withExperimentalAutoCleanupInjectors())
 ```
 
-which can't be backported — its `RouterFeatureKind` is a v22 enum value, so a v20
-router can't be handed a valid feature object.
+On 20.x and 21.0 the feature doesn't exist and can't be recreated — its
+`RouterFeatureKind` is an enum value the older router doesn't know.
 
 **Declare route-scoped tools in the routed component instead.** The router already
 creates and destroys that component, so its lifetime *is* the route's lifetime, on
 every version. You lose nothing.
 
-| | v20 / v21 | v22 |
+| | 20.x, 21.0 | 21.1+, 22 |
 |---|---|---|
 | Route `providers` | ✗ leaks | ✓ with `withExperimentalAutoCleanupInjectors()` |
 | Component constructor | ✓ | ✓ |
@@ -136,10 +136,10 @@ document.addEventListener('toolchange', refresh);
 document.modelContext?.addEventListener?.('toolchange', refresh);   // ← both
 ```
 
-**Listen on both.** The spec dispatches `toolchange` on the document;
-`@mcp-b/webmcp-polyfill` dispatches it only on the ModelContext object. A
-document-only listener never fires on a polyfilled page — measured: document
-listener 0 calls, context listener 4, across the same navigation.
+**Listen on the ModelContext.** That is where the draft fires `toolchange` and where
+`@mcp-b/webmcp-polyfill` fires it. A document-only listener never fires — measured:
+document listener 0 calls, context listener 4, across the same navigation. The
+document listener above is a no-cost hedge, which is why the library keeps both.
 
 ---
 

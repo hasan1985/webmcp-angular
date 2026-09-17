@@ -1,10 +1,16 @@
 # webmcp-angular — Requirements & Implementation Plan
 
+> **Historical.** Written September 2026 before any code existed, then annotated as
+> milestones closed. Kept as written because the decision records cite it; it is not
+> current guidance. For the state of play read [`STATUS.md`](../STATUS.md); for why
+> each choice was made, [`decisions/`](../decisions/README.md). Where this plan was
+> later found wrong, [`M0-FINDINGS.md`](./M0-FINDINGS.md) says where.
+
 > An **API-compatible backport of Angular v22's experimental WebMCP support** for
 > Angular < 22. Same exported names, same signatures, same semantics — so migrating
 > to the built-in version is a change of import path (and eventually a codemod).
 >
-> Status: planning only. No code written yet.
+> Status at writing: planning only. No code written yet.
 
 ---
 
@@ -344,13 +350,13 @@ webmcp-angular/
 
 | # | Milestone | Contents | Exit criteria |
 |---|---|---|---|
-| ~~M0~~ | ✅ **Fidelity spike** | Read `@angular/core@22.1.6` `.d.ts` + `fesm2022`; corrected §2 in four places; located forms/router symbols | **Done** — `docs/M0-FINDINGS.md` |
+| ~~M0~~ | ✅ **Fidelity spike** | Read `@angular/core@22.1.6` `.d.ts` + `fesm2022`; corrected §2 in four places; located forms/router symbols | **Done** — [`M0-FINDINGS.md`](./M0-FINDINGS.md) |
 | ~~M1~~ | ✅ Lifecycle core | `model-context-adapter.ts`, DestroyRef→Abort chain, `AbortSignal.any` composition, `runInInjectionContext` execute | **Done** — untested in a real browser; see M3/M4 |
 | ~~M2~~ | ✅ Core API surface | `declareWebMcpTool`, `provideWebMcpTools`, types. No env-initializer shim needed at a v20 floor | **Done** — emitted `.d.ts` signatures match v22 |
 | ~~M3~~ | ✅ **Parity suite** | `parity/` — shared spec + fake ModelContext, run against ours on 20/21/22 and against `@angular/core` on 22; `.d.ts` diff script; GitHub Actions matrix + weekly drift cron | **Done** — 12/12 on v20 and v21, 24/24 on v22; all 5 declarations match |
 | ~~M4~~ | ✅ Unsupported / SSR / polyfill | `/polyfill` entry point (`installWebMcpPolyfill`); SSR + unsupported-browser + cross-generation specs against the **built artifact**; real Angular SSR fixture prerendered via `scripts/check-packaging.mjs` | **Done** — 7 SSR, 15 env/polyfill tests; prerender emits `webmcp-supported: false`; regression-tested by removing the guard |
 | ~~M5~~ | ✅ Migrate schematic | `ng generate webmcp-angular:migrate` — rewrites core imports to `@angular/core`, reports non-core entry points rather than guessing, removes the dependency only when nothing is left unresolved. **`CoreDelegationGuard` dropped, deliberately** (see below). | **Done** — 9 tests; dry-run against the real playground migrates 2 files and flags 2 |
-| ~~M6~~ | ✅ **Settled: no shim** | Leak measured in Chrome on Angular 20 (route providers leak, component scope does not). Shipping the documented component-scoped pattern instead — a `RouterFeature` cannot be minted for v20's router, and destroying route injectors by hand would affect every provider on the route, not just ours. | **Decided** — `docs/M0-FINDINGS.md` §7 |
+| ~~M6~~ | ✅ **Settled: no shim** | Leak measured in Chrome on Angular 20 (route providers leak, component scope does not). Shipping the documented component-scoped pattern instead — a `RouterFeature` cannot be minted for v20's router, and destroying route injectors by hand would affect every provider on the route, not just ours. | **Decided** — [`M0-FINDINGS.md` §7](./M0-FINDINGS.md) |
 | M7 | ✅ `/testing` *(devtools deferred)* | `installWebMcpTestHarness()` — in-memory `document.modelContext` honouring duplicate-name rejection, `toolchange`, and `AbortSignal` unregistration | **Done** — 11 tests, driven through the real library rather than poking the harness directly |
 | ~~M8~~ | ✅ `/bridge` (JSON-RPC) | `createWebMcpBridge()` — MCP over JSON-RPC 2.0 in `@mcp-b/transports`-compatible postMessage envelopes; `initialize`/`tools/list`/`tools/call`/`ping` + `list_changed`; origin allowlist required, not defaulted | **Done** — 20 tests plus real-Chrome verification; end-to-end tool call over the wire |
 | ~~M9~~ | ✅ `/devtools` *(`ng add` deferred)* | `mountWebMcpDevtools()` — shadow-DOM inspector: live tool list, schemas, schema-prefilled invocation, call log, Ctrl/Cmd+Shift+M | **Done** — 14 tests + real-Chrome verification; lands in a lazy chunk (~8.6 kB raw) that production never downloads |
@@ -395,12 +401,17 @@ atomically so the mixed state never persists.
 
 ---
 
-## 8. Remaining decisions
+## 8. Remaining decisions — all settled
 
-1. **Minimum Angular version.** Recommend **19** — `provideEnvironmentInitializer`, stable `DestroyRef`, stable signals, no shims needed. Supporting 17/18 costs the FR-2.1 shim and two more CI legs. What version is the project on today?
-2. ~~**Package name.**~~ ✅ Settled: **`webmcp-angular`**. An `ng-` prefix reads as *official Angular* — it is the CLI's prefix and sits beside the `@angular/*` scope — and this package deliberately mimics an `@angular/core` API, so it could be mistaken for something the Angular team shipped. Framework-as-suffix reads "WebMCP, for Angular" instead. `-compat` was dropped because `/bridge` has no v22 equivalent and may outlive the migration.
-3. **`/bridge` (JSON-RPC) — in v1 or defer?** Deferring to M8 keeps the first release tight; it's the only feature with no v22 equivalent, so it's also the strongest reason for the package to outlive the migration.
-4. **Route-level tools pre-v22** — attempt the injector-cleanup shim, or ship only the documented component-scoped pattern? The shim is the riskiest code in the plan.
+| As asked here | Settled as | Record |
+|---|---|---|
+| Minimum Angular version — 19 recommended | **20** (`>=20 <24`): the workspace is on 20.3.31, and a v20 floor needs no environment-initializer shim | [PLAN §6 M2](#6-milestones) |
+| Package name | `webmcp-angular`, no `ng-`, no `-compat` | [003](../decisions/003-naming.md) |
+| `/bridge` in v1 or defer | built as M8, dependency-free | [012](../decisions/012-bridge-dependency-free.md) |
+| Route-level tools pre-v22 — shim or document | no shim; component pattern documented; leak measured | [007](../decisions/007-no-route-injector-shim.md) |
+
+Every other decision in this plan, and those made after it, is recorded with its
+options and cost in [`decisions/`](../decisions/README.md).
 
 ---
 

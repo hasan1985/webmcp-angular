@@ -24,7 +24,7 @@ This chapter is about the gap, and the three layers that fill it.
    └────────────┼──────────────┼────────────────────┼──────────────────┘
                 │              │                    │
            ✓ standard    needs executeTool     postMessage
-                         (Chromium ext.)            │
+                         (feature-detect)           │
                                                     ▼
                                          ┌────────────────────┐
                                          │  extension / relay │
@@ -76,8 +76,9 @@ Use a `.then` chain, not top-level `await`: Angular's default browserslist targe
 reject it and the build fails with *"Top-level await is not available in the
 configured target environment."*
 
-The polyfill also supplies `executeTool`, which is what lets in-page code (a chat
-panel, the devtools inspector) invoke tools at all.
+The polyfill also supplies `executeTool`, in the JSON-string shape Chrome's origin
+trial uses, which is what lets in-page code (a chat panel, the devtools inspector)
+invoke tools today ([chapter 1](./01-what-webmcp-is.md#the-page-can-call-its-own-tools)).
 
 ## Layer 3: the bridge
 
@@ -133,9 +134,19 @@ Three control payloads sit outside JSON-RPC, for the handshake:
     │ ── tools/list ─────────────────────────────► │
 ```
 
+That is the MCP `2025-11-25` handshake, and it is what the bridge implements
+(`PROTOCOL_VERSION` in `webmcp-angular/bridge`). MCP `2026-07-28` reshaped it:
+`initialize` is gone, each request carries version and capabilities in `_meta`, a
+server answers `server/discover` — which also carries a server-level `instructions`
+string — and a client opts into notifications with `subscriptions/listen`. A client on
+the new revision that opens with `server/discover` currently gets `methodNotFound`
+from the bridge; adding the new methods alongside the old ones is the open item in
+[`docs/STATUS.md`](../STATUS.md).
+
 `listChanged` is not a courtesy. Tools genuinely come and go as the user navigates
 ([chapter 4](./04-scope-and-navigation.md)), so a client that caches the list without
-listening will act on tools that no longer exist.
+listening will act on tools that no longer exist. Under `2026-07-28` the same signal
+reaches only the clients that asked for it with `subscriptions/listen`.
 
 ### Security
 

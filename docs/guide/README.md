@@ -15,9 +15,21 @@ don't need both.
 | 2 | [Writing tools](./02-writing-tools.md) | Schemas, validation, error text, descriptions that agents actually follow |
 | 3 | [Scoping tools](./03-scoping-tools.md) | App, component and service scope — and the one that leaks |
 | 4 | [Testing](./04-testing.md) | Assert on what your app exposes, with no browser |
-| 5 | [Inspecting and connecting](./05-inspecting-and-connecting.md) | The dev inspector, and reaching Claude Desktop or Cursor |
-| 6 | [Switching to Angular's native API](./06-migrating-to-angular-22.md) | If and when you want to — one command, and what it will and won't do |
+| 5 | [The in-page agent](./05-in-page-agent.md) | **The main case.** Your app calls the LLM itself and hands it the page's tools — discover, run, the streaming loop |
+| 6 | [External agents](./06-external-agents.md) | Claude Desktop, Cursor, an extension reaching in through the bridge — and why that is opt-in |
+| 7 | [Inspecting](./07-inspecting.md) | The dev inspector |
+| 8 | [Switching to Angular's native API](./08-migrating-to-angular-22.md) | If and when you want to — one command, and what it will and won't do |
 | — | [API reference](./api-reference.md) | Every export, by entry point |
+
+## Two kinds of agent
+
+Decide this first; it determines which entry points you need.
+
+| | The harness runs… | Reaches your tools by… | You need |
+|---|---|---|---|
+| **In-page agent** — [chapter 5](./05-in-page-agent.md) | in your app: a chat panel that calls the LLM's API itself | `document.modelContext`, directly | core + polyfill |
+| **External agent** — [chapter 6](./06-external-agents.md) | outside the page: an extension, Claude Desktop, Cursor | MCP over JSON-RPC, through the bridge | core + polyfill + `/bridge`, **opt-in** |
+| The browser's own agent | in the browser | it owns `document.modelContext` | nothing extra |
 
 ## What this package is
 
@@ -26,7 +38,7 @@ brings the same API to **Angular 20 and 21**, plus a few things Angular doesn't
 provide: a test harness, a dev inspector, and a bridge to desktop MCP clients.
 
 The core entry point mirrors Angular's deliberately, so **switching to the native API
-stays an easy option** — [a schematic](./06-migrating-to-angular-22.md) does it for
+stays an easy option** — [a schematic](./08-migrating-to-angular-22.md) does it for
 you. Whether you ever take it is your call; the entry points Angular has no
 equivalent for are a good reason not to.
 
@@ -52,7 +64,7 @@ twice. This package is `0.x` and tracks it.
 It is also contested between browser engines — Chromium implementing, Mozilla
 neutral, WebKit opposed — which makes this a Chromium-plus-polyfill proposition
 rather than a bet on a future standard. See
-[will this be standardised?](../architecture/08-will-this-be-standardised.md).
+[will this be standardised?](../architecture/09-will-this-be-standardised.md).
 
 What that means for you in practice: pin the version, expect the odd breaking change
 in a minor, and keep tools as thin wrappers over services that know nothing about

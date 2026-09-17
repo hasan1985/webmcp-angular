@@ -397,19 +397,20 @@
     </figcaption>
   </figure>
 
-  <p>The entire browser surface is three members on one object:</p>
+  <p>The entire browser surface is four members on one object:</p>
 
-<pre><code>document.modelContext.registerTool(tool, {signal?, exposedTo?})  <span class="c">// Promise&lt;void&gt;</span>
-document.modelContext.getTools({fromOrigins?})                   <span class="c">// Promise&lt;RegisteredTool[]&gt;</span>
-document.modelContext.ontoolchange                               <span class="c">// event handler</span></code></pre>
+<pre><code>document.modelContext.registerTool(tool, {signal?, exposedTo?})   <span class="c">// Promise&lt;void&gt;</span>
+document.modelContext.getTools({fromOrigins?})                    <span class="c">// Promise&lt;RegisteredTool[]&gt;</span>
+document.modelContext.executeTool(tool, inputObject?, {signal?})  <span class="c">// Promise&lt;string&gt;</span>
+document.modelContext.ontoolchange                                <span class="c">// event handler</span></code></pre>
 
   <div class="note">
-    <span class="tag">Misconception</span>
+    <span class="tag">Worth knowing</span>
     <p>
-      <strong>WebMCP is not JSON-RPC.</strong> The W3C draft has no wire format at all —
-      it is a direct in-page JavaScript API, and the intended consumer is the browser's own
-      agent. JSON-RPC enters only when you want to reach an agent <em>outside</em> the
-      page, which is a separate, non-standard layer (§06).
+      <strong>There is no wire format.</strong> <code>document.modelContext</code> is a direct
+      in-page JavaScript API; a tool call is a function call in the same process. JSON-RPC
+      enters when an agent <em>outside</em> the page needs to reach in — a separate layer
+      the bridge implements (§06).
     </p>
   </div>
 </section>
@@ -697,9 +698,9 @@ agent → make_move({square: 5, player: "O"})    <span class="c">← it fixed it
     <p>
       Declare page-scoped tools <strong>in the routed component</strong>. The router already
       creates and destroys that component, so its lifetime <em>is</em> the route's lifetime —
-      on every version. On Angular 22 you may instead use
-      <code>provideRouter(routes, withExperimentalAutoCleanupInjectors())</code>, which
-      cannot be backported because its <code>RouterFeatureKind</code> is a v22 enum value.
+      on every version. From Angular 21.1 you may instead opt in with
+      <code>provideRouter(routes, withExperimentalAutoCleanupInjectors())</code>; 20.x and
+      21.0 have no such feature and cannot be handed one.
     </p>
   </div>
 
@@ -797,10 +798,101 @@ agent → make_move({square: 5, player: "O"})    <span class="c">← it fixed it
 <!-- ───────────────────────── 7 ───────────────────────── -->
 <section>
   <span class="num">07</span>
+  <h2>Who calls what: the harness, the model, the page</h2>
+
+  <p>
+    "Agent" is two halves. The <strong>harness</strong> is ordinary code — a browser feature,
+    your chat component, an MCP client — and it is the only half that touches
+    <code>document.modelContext</code>. The <strong>model</strong> is handed the tool list as
+    text and answers with a name and arguments. Here is one user request, end to end.
+  </p>
+
+  <figure>
+    <div class="scroller">
+    <svg viewBox="0 0 900 400" role="img" aria-label="A user asks the harness for something; the harness reads getTools() from document.modelContext and hands the list to the model as text; the model answers with a tool name and arguments; the harness calls executeTool; the result goes back through the model to the user. Only the harness touches the page.">
+      <defs>
+        <marker id="seq-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <polygon points="0,1 9,5 0,9" fill="currentColor"/>
+        </marker>
+      </defs>
+      <rect x="-5" y="14" width="170" height="34" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <text x="80" y="36" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12.5" fill="currentColor">USER</text>
+      <line x1="80" y1="48" x2="80" y2="392" stroke="currentColor" stroke-width="1" stroke-dasharray="3 4" opacity=".45"/>
+      <rect x="215" y="14" width="170" height="34" rx="3" fill="none" stroke="var(--agent)" stroke-width="1.5"/>
+      <text x="300" y="36" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12.5" fill="var(--agent)">AGENT HARNESS</text>
+      <line x1="300" y1="48" x2="300" y2="392" stroke="currentColor" stroke-width="1" stroke-dasharray="3 4" opacity=".45"/>
+      <rect x="435" y="14" width="170" height="34" rx="3" fill="none" stroke="var(--agent)" stroke-width="1.5"/>
+      <text x="520" y="36" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12.5" fill="var(--agent)">MODEL</text>
+      <line x1="520" y1="48" x2="520" y2="392" stroke="currentColor" stroke-width="1" stroke-dasharray="3 4" opacity=".45"/>
+      <rect x="655" y="14" width="210" height="34" rx="3" fill="none" stroke="var(--browser)" stroke-width="1.5"/>
+      <text x="760" y="36" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12.5" fill="var(--browser)">document.modelContext</text>
+      <line x1="760" y1="48" x2="760" y2="392" stroke="currentColor" stroke-width="1" stroke-dasharray="3 4" opacity=".45"/>
+      <line x1="84" y1="84" x2="296" y2="84" stroke="currentColor" stroke-width="1.4" marker-end="url(#seq-arrow)"/>
+      <text x="190" y="78" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="11.8" fill="currentColor"><tspan opacity=".55">1 </tspan>“add two blue shirts to my cart”</text>
+      <line x1="304" y1="120" x2="756" y2="120" stroke="currentColor" stroke-width="1.4" marker-end="url(#seq-arrow)"/>
+      <text x="530" y="114" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.8" fill="currentColor"><tspan opacity=".55">2 </tspan>getTools()</text>
+      <line x1="756" y1="156" x2="304" y2="156" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#seq-arrow)"/>
+      <text x="530" y="150" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.8" fill="currentColor"><tspan opacity=".55">3 </tspan>[ search_products, add_to_cart, get_cart, … ]</text>
+      <line x1="304" y1="192" x2="516" y2="192" stroke="currentColor" stroke-width="1.4" marker-end="url(#seq-arrow)"/>
+      <text x="410" y="186" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="11.8" fill="currentColor"><tspan opacity=".55">4 </tspan>the request + the tool list, as text</text>
+      <line x1="516" y1="228" x2="304" y2="228" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#seq-arrow)"/>
+      <text x="410" y="222" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.8" fill="currentColor"><tspan opacity=".55">5 </tspan>add_to_cart({sku: "SHIRT-BL-M", qty: 2})</text>
+      <line x1="304" y1="264" x2="756" y2="264" stroke="currentColor" stroke-width="1.4" marker-end="url(#seq-arrow)"/>
+      <text x="530" y="258" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.8" fill="currentColor"><tspan opacity=".55">6 </tspan>executeTool(add_to_cart, …)</text>
+      <line x1="756" y1="300" x2="304" y2="300" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#seq-arrow)"/>
+      <text x="530" y="294" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="11.8" fill="currentColor"><tspan opacity=".55">7 </tspan>“Added 2 × SHIRT-BL-M. Cart now has 2 items.”</text>
+      <line x1="304" y1="336" x2="516" y2="336" stroke="currentColor" stroke-width="1.4" marker-end="url(#seq-arrow)"/>
+      <text x="410" y="330" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="11.8" fill="currentColor"><tspan opacity=".55">8 </tspan>tool result</text>
+      <line x1="516" y1="372" x2="84" y2="372" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#seq-arrow)"/>
+      <text x="300" y="366" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="11.8" fill="currentColor"><tspan opacity=".55">9 </tspan>“Added two blue shirts — your cart has 2 items.”</text>
+    </svg>
+    </div>
+    <figcaption>
+      Step 2 happens because of step 1 — a user asked for something — not on a timer. The
+      model never calls <code>getTools()</code>; the harness reads the list and passes it in,
+      once per user turn, because the list is live and the user may have navigated.
+    </figcaption>
+  </figure>
+
+  <h3>How the harness got to the page</h3>
+  <ul>
+    <li>
+      <strong>The browser's own agent.</strong> <code>registerTool</code> writes into an object
+      the browser owns; the browser agent takes an <em>observation</em> of the tab and reads
+      every document's tools out of it. The user opening the page is the whole connection step.
+    </li>
+    <li>
+      <strong>In-page code you wrote.</strong> A chat panel feature-detects
+      <code>document.modelContext</code> and calls <code>getTools()</code> because you wrote
+      that line. Nothing is discovered at runtime except whether the object is there.
+    </li>
+    <li>
+      <strong>An extension or external client.</strong> The user installed it once; the browser
+      injects its content script on navigation; it probes with <code>postMessage</code>
+      (<code>mcp-check-ready</code>) and the bridge answers. The draft has no meta tag, header
+      or manifest by which a page announces tools — this handshake is the ecosystem's
+      workaround, and it lives outside the spec.
+    </li>
+  </ul>
+
+  <div class="note">
+    <span class="tag">App-wide context</span>
+    <p>
+      Every <code>description</code> is per tool, and there is no server-level
+      <code>instructions</code> slot. Publish what is true of the app as a whole as a cheap
+      read-only tool (<code>about_this_app</code>) whose description says to read it first: one
+      line rides in <code>getTools()</code> every turn, the body travels once.
+    </p>
+  </div>
+</section>
+
+<!-- ───────────────────────── 7 ───────────────────────── -->
+<section>
+  <span class="num">08</span>
   <h2>What bites you</h2>
 
   <p>
-    Nine things measured the hard way. None of them announce themselves — the failure mode
+    Eight things measured the hard way. None of them announce themselves — the failure mode
     for most is <em>silence</em>.
   </p>
 
@@ -832,16 +924,16 @@ agent → make_move({square: 5, player: "O"})    <span class="c">← it fixed it
     <div class="pitfall">
       <span class="n">04</span>
       <div>
-        <h4><code>executeTool</code> is not standard</h4>
-        <p><code>executeTool is not a function</code> — usually in an in-page chat or inspector.</p>
-        <p class="fix"><b>Fix</b> Feature-detect it. The polyfill supplies it; the bare spec does not.</p>
+        <h4><code>executeTool</code> comes in two shapes, and is sometimes absent</h4>
+        <p><code>executeTool is not a function</code> in an in-page chat or inspector — or, on a newer build, arguments arrive as <code>[object Object]</code>. The draft adopted it from a Chromium extension and takes an <em>object</em>; Chrome, the polyfill and types 5.1.0 still take a JSON <em>string</em>.</p>
+        <p class="fix"><b>Fix</b> Feature-detect it and serialize arguments in one place, so switching shape is a one-line change.</p>
       </div>
     </div>
     <div class="pitfall">
       <span class="n">05</span>
       <div>
         <h4><code>inputSchema</code> comes back in two shapes</h4>
-        <p>A JSON <em>string</em> on Chrome 149–153, an object from 154.0.8013 onward.</p>
+        <p>A JSON <em>string</em> until webmcp#241; an object rolling out from Chrome 154.0.8013, cross-document tools first — the origin-trial builds still return the string for same-document tools.</p>
         <p class="fix"><b>Fix</b> Branch on <code>typeof</code> and guard the parse. Affects reading tools back, not registering them.</p>
       </div>
     </div>
@@ -856,21 +948,13 @@ agent → make_move({square: 5, player: "O"})    <span class="c">← it fixed it
     <div class="pitfall">
       <span class="n">07</span>
       <div>
-        <h4><code>file:</code> installs break secondary entry points</h4>
-        <p><code>TS7031: implicitly has an 'any' type</code> on tool arguments, with nothing pointing at the cause. A symlink defeats the self-referential type import, and <code>skipLibCheck</code> hides it.</p>
-        <p class="fix"><b>Fix</b> Test against a packed tarball, which installs as a real directory.</p>
+        <h4><code>toolchange</code> fires at the <em>ModelContext</em>, not the document</h4>
+        <p>The draft fires it at the ModelContext object and the polyfill does the same; our first bridge listened on the document. Measured across route changes: document listener 0 calls, context listener 4.</p>
+        <p class="fix"><b>Fix</b> Listen on the ModelContext. The library also listens on the document as a no-cost hedge.</p>
       </div>
     </div>
     <div class="pitfall">
       <span class="n">08</span>
-      <div>
-        <h4><code>toolchange</code> does not fire where the spec says</h4>
-        <p>The spec dispatches on the <em>document</em>. The polyfill dispatches only on the <em>ModelContext</em>. Measured across route changes: document listener 0 calls, context listener 4.</p>
-        <p class="fix"><b>Fix</b> Listen on both.</p>
-      </div>
-    </div>
-    <div class="pitfall">
-      <span class="n">09</span>
       <div>
         <h4>Heterogeneous schemas will not type-check in one array</h4>
         <p>One type parameter covers the whole array, so tools with different schemas have no valid <code>S</code> — <a href="https://github.com/angular/angular/issues/70125">angular#70125</a>, still open.</p>
@@ -880,12 +964,12 @@ agent → make_move({square: 5, player: "O"})    <span class="c">← it fixed it
   </div>
 
   <div class="note measured">
-    <span class="tag">The wider lesson · from pitfall 08</span>
+    <span class="tag">The wider lesson · from pitfall 07</span>
     <p>
       That bug survived twenty passing tests, because the test fake dispatched
-      <code>toolchange</code> on <em>both</em> targets — faithful to the spec, and therefore
-      <strong>more generous than the real implementation</strong>. A fake more capable than
-      reality hides exactly this class of bug.
+      <code>toolchange</code> on <em>both</em> targets, so a listener on the wrong one still
+      fired — <strong>a fake more generous than the real implementation</strong> hides exactly
+      this class of bug.
     </p>
     <p>
       Anything that depends on <em>where</em> an event fires, or on <code>event.origin</code>
@@ -915,7 +999,7 @@ agent → make_move({square: 5, player: "O"})    <span class="c">← it fixed it
   <p>
     WebMCP is a Community Group draft and Angular's support is marked
     <code>@experimental</code> — the API may change outside a major version, and it has
-    already moved twice. The full written course, with sources for every claim, lives in
+    already moved three times. The full written course, with sources for every claim, lives in
     <code>docs/architecture/</code> in the <code>webmcp-angular</code> repository.
   </p>
 </footer>

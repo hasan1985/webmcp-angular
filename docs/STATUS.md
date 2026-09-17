@@ -4,7 +4,9 @@ Working state, for picking the project up. Updated 16 September 2026.
 
 For *what the package is*, read the [README](../README.md). For *how to use it*, the
 [guide](./guide/README.md). For *how WebMCP works*, the
-[architecture course](./architecture/README.md). This file is only the state of play.
+[architecture course](./architecture/README.md). For *how the polyfill works*, read
+from source, [`docs/polyfill/`](./polyfill/README.md). For *why each choice was made*,
+[`docs/decisions/`](./decisions/README.md). This file is only the state of play.
 
 ---
 
@@ -17,7 +19,7 @@ For *what the package is*, read the [README](../README.md). For *how to use it*,
 | `~/myGitHub/claude-openai-proxy` | fronts the local Claude Code login so the playground chat works with no API key |
 
 They are separate on purpose: the playground installs the **built tarball**, not
-workspace source, so it exercises what actually ships (`docs/M0-FINDINGS.md` §6.1 for
+workspace source, so it exercises what actually ships ([`history/M0-FINDINGS.md`](./history/M0-FINDINGS.md) §6.1 for
 the bug that caught).
 
 ## Current state
@@ -34,7 +36,8 @@ npm run build:lib        # all entry points + schematics → dist/
 npm run check:packaging  # pack, install the tarball in a real SSR app, prerender
 ```
 
-Milestones **M0–M9 are complete or settled** (`docs/PLAN.md` §6). Not done: `ng add`,
+Milestones **M0–M9 are complete or settled** ([`history/PLAN.md`](./history/PLAN.md) §6). Architecture docs
+reviewed against the current draft 16 September 2026 (open threads 3 and 4 came out of it). Not done: `ng add`,
 a docs site, publish prep (LICENSE, `repository` field).
 
 ## Running the demo end to end
@@ -49,7 +52,9 @@ cd ~/myGitHub/webmcp-angular-playground && npm start     # http://localhost:4200
 ```
 
 In the chat panel: **API URL** `http://127.0.0.1:8080`, **key** `my-secret-key`.
-Then try *"what's on the board?"*, or tick **Agent plays back** and click a square.
+Ask *"what's on the board?"* once, click **Enable WebMCP**, and ask again — or tick
+**Agent plays back** and click a square. The JSON-RPC bridge is **off** until you tick
+**External agents** in the header (thread 7).
 **Ctrl/Cmd + Shift + M** opens the inspector.
 
 After rebuilding the library, reinstall it in the playground:
@@ -67,17 +72,17 @@ serves a stale Vite dep cache and fails with *"does not provide an export named�
 
 ## Open threads
 
-### 1. Tools on/off toggle in the chat — designed, not built
+### 1. Tools on/off toggle in the chat — built
 
-Discussed in detail, documented in
-[chapter 7](./architecture/07-lifecycle-sequence.md#cadence-when-you-control-the-agent),
-**not implemented**. Two things move with the toggle: the `tools` key *and* the
-system prompt (a tool-aware prompt with tools off makes the model narrate calls it
-never made). Registration is unaffected — the toggle governs what the chat sends, not
-what the page publishes.
+**Enable WebMCP** button in the chat panel, off by default. Implemented as designed in
+[chapter 7](./architecture/07-lifecycle-in-page-agent.md#cadence-when-you-control-the-agent):
+off = no `tools` key (omitted, not `[]`), plain system prompt, no app-context read, no
+`getTools()` call; the switch starts a new session so the two modes never share a
+history. Registration is unaffected — the inspector still lists the tools. "Agent
+plays back" is disabled while off. State lives in `AgentTurn.webMcpEnabled`.
 
-Recommended: toggle starts a new session. Alternative: keep the conversation and send
-`tools` with `tool_choice: {type: 'none'}` when history already holds tool blocks.
+Verified in Chrome via the proxy: off → request has no `tools`, model answers "I can't
+see the page"; on → `tools: [4]`, `get_board` runs, model reads the board.
 
 ### 2. Per-session app context — half built
 
@@ -99,13 +104,28 @@ from us. Notifications are also now opt-in via `subscriptions/listen`, where we 
 Not yet fixed. Adding `server/discover` plus subscription handling would restore
 interop without breaking older clients.
 
-### 4. Nobody watches the parity cron
+### 4. `executeTool` argument shape — the draft moved, we follow the polyfill
+
+Verified 16 September 2026 against the current draft: `executeTool` is now on the
+`ModelContext` interface itself and takes an argument **object**. Chrome's origin
+trial, `@mcp-b/webmcp-polyfill` 5.1.0 (`parseChromeToolInput`) and
+`@mcp-b/webmcp-types` 5.1.0 still take a **JSON string**, and the bridge and devtools
+pass a string. That is correct for everything runnable today. When a build ships the
+draft's shape, the bridge (`bridge/src/public-api.ts`) and devtools each have one call
+site to change; worth a feature-probe rather than a version check.
+
+Same pass: the draft fires `toolchange` at the **ModelContext**, not the document —
+so the polyfill was right and our original document-only listener was the bug.
+Architecture chapters 4, 6 §7 and 7 now say so; the listen-on-both code is fine as a
+hedge.
+
+### 5. Nobody watches the parity cron
 
 `.github/workflows/parity.yml` runs weekly to catch Angular changing its experimental
 WebMCP API out from under the backport — which they explicitly reserve the right to
 do. Decide who gets told when it goes red. This is the main ongoing risk.
 
-### 5. Untested surfaces
+### 6. Untested surfaces
 
 - **Firefox and Safari.** The unsupported path is proven in jsdom with `modelContext`
   removed — same code path, but no real non-Chromium browser has run it.
@@ -118,9 +138,18 @@ do. Decide who gets told when it goes red. This is the main ongoing risk.
 
 ---
 
+### 7. Bridge is opt-in — verify the stop path with a real client
+
+Built 16 September 2026: `ExternalAgents` service, header checkbox, lazy import,
+`start()`/`stop()`. Verified in Chrome: fresh load is off with no bridge chunk
+requested; enabling fetches the chunk and a hand-posted `mcp-check-ready` gets
+`mcp-server-ready`; disabling announces `mcp-server-stopped` and the probe goes
+unanswered; the choice survives reload via `localStorage`. Not yet verified with a
+real client: that the MCP-B extension disconnects cleanly on `mcp-server-stopped`.
+
 ## Things that cost real time, worth not rediscovering
 
-Full detail with evidence in [`M0-FINDINGS.md`](./M0-FINDINGS.md); the ones that bite
+Full detail with evidence in [`history/M0-FINDINGS.md`](./history/M0-FINDINGS.md); the ones that bite
 most often:
 
 - **A fake more capable than reality hides bugs.** The test harness dispatched
@@ -133,6 +162,11 @@ most often:
 - **`file:` installs symlink**, and TypeScript resolves symlinks to their real path,
   so a secondary entry point importing the primary by package name degrades to `any`
   under `skipLibCheck`. Test against a packed tarball.
-- **Route-level `providers` leak** before Angular 22 — measured, not assumed.
+- **The polyfill's cleanup restores only what it installed.** A `modelContext` that
+  was already on `document` (the test harness's, an earlier spec's) is skipped at
+  install and survives `cleanupWebMCPPolyfill()`; clear both `document` and
+  `Document.prototype` in teardown. Detail: `docs/polyfill/01-install-and-cleanup.md`.
+- **Route-level `providers` leak** unless `withExperimentalAutoCleanupInjectors()` is on,
+  and that feature only exists from `@angular/router` 21.1 — measured on 20.3.31.
 - **jsdom cannot test anything** that depends on where an event fires, or on
   `event.origin` / `event.source`.

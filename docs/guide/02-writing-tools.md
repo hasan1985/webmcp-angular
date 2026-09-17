@@ -180,18 +180,82 @@ execute: async ({ query }, { signal }) => {
 
 Worth wiring for anything that hits the network. Free correctness.
 
-## Return values
+## Return values, and where they go
 
-`execute` returns `unknown` — a string, an object, anything. The browser serializes
-it. There's no `{ content: [...] }` envelope to build; Angular's own docs note the
-result "is typically just a raw `string`."
+`execute` returns `unknown` — a string, an object, anything. There's no
+`{ content: [...] }` envelope to build; Angular's own docs note the result "is
+typically just a raw `string`."
 
-Prose the agent can read tends to beat raw JSON, because it can be specific about
-what happened:
+Your tool's job ends at `return`. What happens next is the part worth seeing once,
+because it decides what you should return:
+
+```
+  your execute()          returns  "Added 2 × SHIRT-BL-M. Cart now has 2 items."
+        │
+        ▼
+  document.modelContext   serializes it — a string as-is, an object via JSON.stringify
+        │
+        ▼
+  the agent harness       puts that text into a tool_result and sends it to the model,
+  (chat, browser agent,   together with the conversation so far
+   MCP client)
+        │
+        ▼
+  the model               reads it as text — this is the ONLY thing it learns from
+                          the call — and decides: answer the user, or call again
+```
+
+In the Messages API, the harness's next request carries your string verbatim:
+
+```json
+{
+  "role": "user",
+  "content": [
+    {
+      "type": "tool_result",
+      "tool_use_id": "toolu_01…",
+      "content": "Added 2 × SHIRT-BL-M. Cart now has 2 items, total £38.00."
+    }
+  ]
+}
+```
+
+and the model's reply to the user is written from that alone:
+
+```
+model → "Done — two blue shirts are in your cart, £38.00 in total."
+```
+
+Three things follow from the model seeing nothing but your text:
+
+**Say what changed, not just that it worked.** The model cannot see your UI update.
+`"ok"` forces a follow-up read; the state in the reply makes it the last call:
 
 ```ts
 return `Added ${qty} × ${sku}. Cart now has ${cart.count()} items, total ${cart.total()}.`;
 ```
+
+**Prose beats raw JSON for a mutation; JSON is fine for a read.** A sentence can say
+what happened and why; a list of records is best left as records:
+
+```ts
+// mutation — say what happened
+return `Played ${player} on square ${square}.\n${store.describe()}`;
+
+// read — structure is the point
+return cart.items();   // → '[{"sku":"SHIRT-BL-M","qty":2},…]'
+```
+
+**Keep it as short as it can be and still be complete.** The text is sent to the
+model, counted as input tokens, and stays in the conversation for every later turn.
+A 20-row table when three rows answer the question is paid for on every request
+after it.
+
+The same path is why [failures go back as text](#validate-everything): a thrown error
+reaches the model as *"Tool was executed but the invocation failed…"* and nothing
+else, while a returned `Rejected: …` sentence tells it what to do instead. The full
+round trip, with the harness and model as separate lanes, is
+[architecture chapter 7, diagram 2](../architecture/07-lifecycle-in-page-agent.md#2-a-user-asks-the-agent-to-do-something).
 
 [issue]: https://github.com/angular/angular/issues/70125
 

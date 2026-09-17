@@ -13,7 +13,7 @@
  *  2. Secondary entry points type-check at a consumer. `webmcp-angular/strict`
  *     imports its types from the primary entry *by package name*; under a `file:`
  *     install that symlinks, TypeScript resolves to the real path and the
- *     self-reference silently degrades to `any` (see docs/M0-FINDINGS.md §6.1).
+ *     self-reference silently degrades to `any` (see docs/history/M0-FINDINGS.md §6.1).
  *     A tarball installs as a real directory, which is why this uses one.
  *  3. **Server-side rendering.** The fixture prerenders at build time, so bootstrap
  *     — and therefore tool registration — executes in Node with no `document`.

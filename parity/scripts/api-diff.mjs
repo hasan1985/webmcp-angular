@@ -147,7 +147,7 @@ function main() {
       `✖ ${failures} of ${SYMBOLS.length} declarations diverged from @angular/core@${angularVersion}.`,
     );
     console.error(
-      '  Either match upstream, or record a deliberate divergence in docs/M0-FINDINGS.md.',
+      '  Either match upstream, or record a deliberate divergence in docs/history/M0-FINDINGS.md.',
     );
     process.exit(1);
   }

@@ -116,7 +116,7 @@ if (isDevMode()) {
 
 It lists every registered tool with its schema, prefills the arguments, and runs
 them on click — so you can exercise a tool without an agent, an API key, or a chat
-window. More in [chapter 5](./05-inspecting-and-connecting.md).
+window. More in [chapter 7](./07-inspecting.md).
 
 ## Troubleshooting
 
@@ -145,7 +145,7 @@ Expected if you scoped them to a route — see [chapter 3](./03-scoping-tools.md
 
 A fuller symptom index lives in
 [the architecture course](../architecture/06-what-bites-you.md), and
-[the sequence diagrams](../architecture/07-lifecycle-sequence.md) show the whole
+[the sequence diagrams](../architecture/07-lifecycle-in-page-agent.md) show the whole
 lifecycle on one timeline — useful when something is happening in the wrong order.
 
 ---

@@ -1,4 +1,4 @@
-[← scoping tools](./03-scoping-tools.md) · [contents](./README.md) · next: [Inspecting and connecting →](./05-inspecting-and-connecting.md)
+[← scoping tools](./03-scoping-tools.md) · [contents](./README.md) · next: [The in-page agent →](./05-in-page-agent.md)
 
 # 4. Testing
 
@@ -65,9 +65,11 @@ The harness implements the parts of the spec that change test outcomes:
 - **Duplicate names reject** with `InvalidStateError`, as a browser does.
 - **`AbortSignal` really unregisters** — destroy an injector in a test and the tool
   disappears, exactly as it would live.
-- **`toolchange` fires on both** the model context and the document. The spec
-  dispatches on the document; the polyfill only on the context. Firing both is
-  deliberate so a listener written either way is exercised.
+- **`toolchange` fires on both** the model context and the document. The draft and
+  the polyfill fire it at the model context only; the harness also fires at the
+  document so a listener written either way is exercised. Keep in mind that this
+  makes the fake more generous than a browser — a document-only listener passes here
+  and fails live.
 
 A fake that skipped these would let tests pass on code that breaks in a browser.
 
@@ -138,4 +140,4 @@ throws a clear error in a plain Node environment rather than failing obscurely.
 
 ---
 
-next: [Inspecting and connecting →](./05-inspecting-and-connecting.md)
+next: [The in-page agent →](./05-in-page-agent.md)

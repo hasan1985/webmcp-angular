@@ -10,7 +10,7 @@
  * schematic does it), rather than a rewrite. Additive ideas belong in /strict,
  * /polyfill, /bridge, /devtools, /testing — not here.
  *
- * Verified against @angular/core@22.1.6 — see docs/M0-FINDINGS.md.
+ * Verified against @angular/core@22.1.6 — see docs/history/M0-FINDINGS.md.
  */
 
 export type {

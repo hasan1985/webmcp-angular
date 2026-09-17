@@ -21,11 +21,12 @@ describe('installWebMcpPolyfill', () => {
   let root: EnvironmentInjector;
 
   /**
-   * `@mcp-b/webmcp-polyfill` 5.1.0 installs `modelContext` on **`Document.prototype`**,
-   * and `cleanupWebMCPPolyfill()` does NOT remove that property — after cleanup,
-   * `document.modelContext` is still truthy. So neither `delete document.modelContext`
-   * nor the polyfill's own teardown gives a clean slate; the prototype property has to
-   * go too, or every test after the first wrongly observes a "native" implementation.
+   * `@mcp-b/webmcp-polyfill` 5.1.0 installs `modelContext` on **`Document.prototype`**
+   * and `cleanupWebMCPPolyfill()` restores what it installed — but only what *it*
+   * installed. A `modelContext` that already existed when it ran (the test harness's
+   * own property on `document`, or a previous spec's) is skipped and never recorded,
+   * so the polyfill's teardown leaves it. Clear both objects here, or every test after
+   * the first wrongly observes a "native" implementation. (M0-FINDINGS §6.4.)
    */
   const uninstallCompletely = () => {
     cleanupWebMCPPolyfill();
