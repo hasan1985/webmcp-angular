@@ -55,8 +55,9 @@ cd ~/myGitHub/webmcp-angular-playground && npm start     # http://localhost:4200
 ```
 
 In the chat panel: **API URL** `http://127.0.0.1:8080`, **key** `my-secret-key`. Both
-live in that tab's `sessionStorage` — a new tab starts blank, and a blank URL means
-the panel calls Anthropic directly and the proxy key gets a 401 from there.
+live in that tab's `sessionStorage` — a new tab starts blank. **Connect** probes
+`GET /v1/models` first, so a wrong key or a blank URL fails on the form with the
+reason, and success shows *connected to 127.0.0.1:8080* under the header.
 Ask *"what's on the board?"* once, click **Enable WebMCP**, and ask again — or tick
 **Agent plays back** and click a square. The JSON-RPC bridge is **off** until you tick
 **External agents** in the header (thread 7).
