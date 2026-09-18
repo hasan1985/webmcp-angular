@@ -4,42 +4,35 @@
 
 ## Situation
 
-The workspace was created as `ng-webmcp-compat`. Two things were wrong with it, one
-noticed by Hasan and one that followed.
+The workspace was created as `ng-webmcp-compat`, with Angular's exact function names.
 
 ## Options
 
-**Package name**
-
-| Candidate | Problem |
+| Package name | |
 |---|---|
-| `ng-webmcp-compat` | `ng-` is the Angular CLI's prefix and sits beside `@angular/*`; a package that deliberately mimics an `@angular/core` API could be mistaken for something the Angular team shipped. `-compat` implies it is only a shim, which `/bridge` is not. |
-| `angular-webmcp` | still framework-first; reads like an official integration |
-| **`webmcp-angular`** | "WebMCP, for Angular" — framework as suffix, the way community packages are usually named |
+| `ng-webmcp-compat` | `ng-` is the CLI's prefix and sits beside `@angular/*`; a package mimicking an `@angular/core` API could pass for official. `-compat` implies a shim, which `/bridge` is not |
+| `angular-webmcp` | still framework-first, reads official |
+| **`webmcp-angular`** | "WebMCP, for Angular" — framework as suffix, the community convention |
 
-**Function names**
-
-| Candidate | Problem |
+| Function names | |
 |---|---|
-| `declareExperimentalWebMcpTool` (Angular's exact name) | `Experimental` is Angular's stability marker for *their* API; ours is versioned `0.x` and says so. Hasan: *"I don't want to call it experimental."* |
-| **`declareWebMcpTool` / `provideWebMcpTools`** | the same names with the marker removed |
+| `declareExperimentalWebMcpTool` (Angular's) | `Experimental` is Angular's stability marker for *their* API; ours is `0.x`. Hasan: *"I don't want to call it experimental."* |
+| **`declareWebMcpTool` / `provideWebMcpTools`** | the marker removed |
 
 ## Decision
 
-Package and repo are `webmcp-angular`, with no trace of `ng-` anywhere. The two
-functions drop `Experimental`. Angular's own names are never renamed when cited —
-`provideExperimentalWebMcpForms`, `withExperimentalAutoCleanupInjectors` — nor are
-third-party packages.
+Package and repo `webmcp-angular`, no trace of `ng-`. The two functions drop
+`Experimental`. Angular's own names (`provideExperimentalWebMcpForms`,
+`withExperimentalAutoCleanupInjectors`) and third-party packages are never renamed
+when cited.
 
 ## What it cost
 
-The migration is no longer a pure specifier rewrite: the schematic has to alias
+The migration is no longer a pure specifier rewrite: the schematic aliases
 (`declareExperimentalWebMcpTool as declareWebMcpTool`) so call sites stay untouched,
-and the parity api-diff has to normalise names before comparing signatures. Both are
-built and tested. And the entire published artifact was rebuilt to remove the old
-name.
+and the api-diff normalises names before comparing. Both tested. The published artifact
+was rebuilt to remove the old name.
 
 ## Revisit when
 
-Angular drops `Experimental` from its own names. Then ours match exactly and the
-aliasing in the schematic becomes dead code.
+Angular drops `Experimental` from its names; the aliasing becomes dead code.

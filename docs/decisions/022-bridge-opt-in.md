@@ -4,40 +4,31 @@
 
 ## Situation
 
-The playground started the JSON-RPC bridge unconditionally in `main.ts`. Hasan's
-main use case is an **in-page agent** — the app calls the LLM's API itself and hands
-it the page's tools — which never needs the bridge. Opening it exposes the page's
-tools to anything that can post a message into the window from an allowed origin.
-That is a decision for whoever runs the app, and the default was making it for
-them.
+The playground started the bridge unconditionally. Hasan's main case is an **in-page
+agent**, which never needs it, and an open bridge exposes the tools to anything posting
+into the window from an allowed origin — the operator's decision, being made for them.
 
 ## Options
 
 | | |
 |---|---|
-| Start the bridge at bootstrap, as before | one less thing to explain; but every deployment is listening whether or not anyone intended it, and the bridge chunk is downloaded by everyone |
-| Start it only in dev mode | wrong axis — an external agent is a production feature for the people who want it |
-| **Start it only behind an explicit setting; default off; load it lazily; make it stoppable** | the person setting up the app chooses; the chunk is fetched on first enable; `stop()` tells a connected client the door closed |
+| Start at bootstrap | every deployment listens whether intended or not; everyone downloads the chunk |
+| Start in dev mode only | wrong axis — an external agent is a production feature for those who want it |
+| **Behind an explicit setting; default off; lazy; stoppable** | the operator chooses; the chunk loads on first enable; `stop()` tells a connected client |
 
 ## Decision
 
-The library already made the bridge a separate entry point with an explicit
-`start()`. The playground now models the recommended pattern: an `ExternalAgents`
-service with an `enabled` signal, remembered in `localStorage`, driving a dynamic
-import of `webmcp-angular/bridge` and `start()` / `stop()`; a checkbox in the header
-bound to it. Guide chapter 6 states the rule for consumers: default off, gate behind
-a setting, load lazily, make stoppable.
-
-This is also where the two use cases got their names — **in-page agent** (guide
-chapter 5) and **external agent** (chapter 6) — because the distinction is what
-decides whether the bridge is needed at all.
+The library already had a separate entry point with explicit `start()`. The playground
+models the pattern: an `ExternalAgents` service with an `enabled` signal in
+`localStorage`, driving a dynamic import and `start()`/`stop()`, bound to a header
+checkbox. Guide chapter 6 states the rule for consumers. This is also where the two
+cases got their names — **in-page agent** (guide 5), **external agent** (guide 6) —
+since the distinction decides whether the bridge is needed.
 
 ## What it cost
 
-One more switch in the playground UI, and a demo step: to show the bridge, tick
-**External agents** first.
+One more switch, and a demo step: tick **External agents** first.
 
 ## Revisit when
 
-A hosting model appears where the operator, not the page, decides exposure — then
-the setting moves out of the page.
+A hosting model where the operator, not the page, decides exposure.

@@ -4,32 +4,28 @@
 
 ## Situation
 
-Angular 22's implementation opens with
-`if (typeof ngServerMode !== 'undefined' && ngServerMode) return;`. `ngServerMode` is
-a build-time global that Angular's own build defines; on Angular 20 and 21, in a
-consumer's build, it is not reliably present.
+Angular 22 opens with `if (typeof ngServerMode !== 'undefined' && ngServerMode) return;`.
+That build-time global is defined by Angular's own build; in a consumer's build on
+20/21 it is not reliably present.
 
 ## Options
 
 | | |
 |---|---|
-| Copy Angular's check verbatim | on 20/21 the global may be undefined in *both* environments, so the guard never fires and a server render touches `document` and throws |
-| **`typeof document === 'undefined'`** | the same fact from the other side — a server render has no document; works on every version, and needs no build global |
-| Inject `PLATFORM_ID` and call `isPlatformBrowser` | correct, but adds an injection the original does not have, and `declareWebMcpTool` may be called with an explicit injector where that token is not obviously resolvable |
+| Copy the check verbatim | on 20/21 the global may be undefined in both environments; the guard never fires; a server render touches `document` and throws |
+| **`typeof document === 'undefined'`** | the same fact from the other side; works on every version; no build global |
+| `PLATFORM_ID` + `isPlatformBrowser` | correct, but adds an injection the original lacks, and `declareWebMcpTool` may run with an explicit injector where the token is not resolvable |
 
 ## Decision
 
-`typeof document === 'undefined'`, with a comment naming it as the one deliberate
-divergence from the v22 source. Same outcome — the browser API is never touched while
-prerendering, silently. The packaging check ([011](./011-tarball-not-file-install.md))
-prerenders a real SSR app to prove it.
+`typeof document === 'undefined'`, commented as the one deliberate divergence from v22.
+Same outcome: the browser API is never touched while prerendering. The packaging check
+([011](./011-tarball-not-file-install.md)) prerenders a real SSR app to prove it.
 
 ## What it cost
 
-One line that is not a line-for-line copy. A reader diffing us against Angular has
-to know why.
+One line that is not a copy; a reader diffing against Angular must know why.
 
 ## Revisit when
 
-Support for Angular 20/21 is dropped. Then `ngServerMode` is always defined and the
-original check can return.
+Angular 20/21 support is dropped; `ngServerMode` is then always defined.

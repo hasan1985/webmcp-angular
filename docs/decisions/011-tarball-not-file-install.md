@@ -4,40 +4,33 @@
 
 ## Situation
 
-The playground first installed the library with `npm i file:../webmcp-angular/dist/...`.
-Tool arguments came out as `any` — `TS7031: Binding element 'square' implicitly has an
-'any' type` — with nothing pointing at the cause.
-
-## What was happening
-
-A `file:` install is a **symlink**. TypeScript resolves symlinks to their real path,
-so from `dist/webmcp-angular/strict/` the import `from 'webmcp-angular'` in
-`strict/index.d.ts` walks up from the *real* path and never finds a `node_modules`
-containing the package. With `skipLibCheck` on — the Angular CLI default — the
-resolution failure is silent and the types degrade to `any`.
+The playground first used `npm i file:../webmcp-angular/dist/...`. Tool arguments came
+out `any` — `TS7031: Binding element 'square' implicitly has an 'any' type` — with
+nothing pointing at the cause. A `file:` install is a **symlink**; TypeScript resolves
+to the real path, so `strict/index.d.ts`'s `from 'webmcp-angular'` never finds a
+`node_modules` containing the package; with `skipLibCheck` (CLI default) the failure is
+silent.
 
 ## Options
 
 | | |
 |---|---|
-| Keep `file:` and set `preserveSymlinks` in the consumer | fixes one consumer; every real user who tries a local install hits it |
-| Make secondary entry points import the core by relative path | not what `ng-packagr` emits by default; an upstream question, not a local fix |
-| **Install the packed tarball** (`npm pack` → `npm i ./x.tgz`), in the playground and in CI | a tarball unpacks into a real directory, exactly like a registry install |
+| Keep `file:`, set `preserveSymlinks` | fixes one consumer; every local install hits it |
+| Relative imports between entry points | not what `ng-packagr` emits; an upstream question |
+| **Install the packed tarball** (`npm pack` → `npm i ./x.tgz`) in the playground and CI | unpacks to a real directory, like a registry install |
 
 ## Decision
 
-The playground and `scripts/check-packaging.mjs` both consume a packed tarball. The
-packaging check goes further: it installs the tarball into a real SSR fixture,
-type-checks a consumer that uses `/strict`, and prerenders — the only check in the
-repo that consumes the library the way a user does.
+Playground and `scripts/check-packaging.mjs` consume a packed tarball. The packaging
+check also installs it into a real SSR fixture, type-checks a `/strict` consumer, and
+prerenders — the only check that consumes the library as a user does.
 
 ## What it cost
 
-`npm pack` + reinstall after every library rebuild, and — learned separately —
-`rm -rf .angular/cache` after a rename, because `ng serve`'s Vite pre-bundle is keyed
-by version and serves the stale package.
+`npm pack` + reinstall per rebuild, and `rm -rf .angular/cache` after a rename — `ng
+serve`'s Vite pre-bundle is keyed by version.
 
 ## Revisit when
 
-`ng-packagr` changes how secondary entry points reference the primary, or TypeScript
-changes symlink resolution defaults.
+`ng-packagr` changes how secondary entries reference the primary, or TypeScript changes
+symlink resolution.
