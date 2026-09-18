@@ -26,7 +26,7 @@ describe('installWebMcpPolyfill', () => {
    * installed. A `modelContext` that already existed when it ran (the test harness's
    * own property on `document`, or a previous spec's) is skipped and never recorded,
    * so the polyfill's teardown leaves it. Clear both objects here, or every test after
-   * the first wrongly observes a "native" implementation. (M0-FINDINGS §6.4.)
+   * the first wrongly observes a "native" implementation. (docs/decisions/evidence.md 4.3.)
    */
   const uninstallCompletely = () => {
     cleanupWebMCPPolyfill();

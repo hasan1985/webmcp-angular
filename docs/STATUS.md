@@ -5,8 +5,9 @@ Working state, for picking the project up. Updated 16 September 2026.
 For *what the package is*, read the [README](../README.md). For *how to use it*, the
 [guide](./guide/README.md). For *how WebMCP works*, the
 [architecture course](./architecture/README.md). For *how the polyfill works*, read
-from source, [`docs/polyfill/`](./polyfill/README.md). For *why each choice was made*,
-[`docs/decisions/`](./decisions/README.md). For *what might come next*,
+from source, [`docs/polyfill/`](./polyfill/README.md). For *why each choice was made*
+and the evidence behind it, [`docs/decisions/`](./decisions/README.md). For *what might
+come next*,
 [`docs/ideas/`](./ideas/README.md). This file is only the state of play.
 
 ---
@@ -20,8 +21,8 @@ from source, [`docs/polyfill/`](./polyfill/README.md). For *why each choice was 
 | `~/myGitHub/claude-openai-proxy` | fronts the local Claude Code login so the playground chat works with no API key |
 
 They are separate on purpose: the playground installs the **built tarball**, not
-workspace source, so it exercises what actually ships ([`history/M0-FINDINGS.md`](./history/M0-FINDINGS.md) §6.1 for
-the bug that caught).
+workspace source, so it exercises what actually ships ([evidence 4.1](./decisions/evidence.md)
+for the bug that caught).
 
 ## Current state
 
@@ -37,8 +38,9 @@ npm run build:lib        # all entry points + schematics → dist/
 npm run check:packaging  # pack, install the tarball in a real SSR app, prerender
 ```
 
-Milestones **M0–M9 are complete or settled** ([`history/PLAN.md`](./history/PLAN.md) §6). Architecture docs
-reviewed against the current draft 16 September 2026 (open threads 3 and 4 came out of it). Not done: `ng add`,
+All planned milestones are complete or settled — core, parity suite, SSR/polyfill,
+migrate schematic, `/testing`, `/bridge`, `/devtools`. Architecture docs reviewed
+against the current draft 16 September 2026 (open threads 3 and 4 came out of it). Not done: `ng add`,
 a docs site, publish prep (LICENSE, `repository` field).
 
 ## Running the demo end to end
@@ -150,7 +152,7 @@ real client: that the MCP-B extension disconnects cleanly on `mcp-server-stopped
 
 ## Things that cost real time, worth not rediscovering
 
-Full detail with evidence in [`history/M0-FINDINGS.md`](./history/M0-FINDINGS.md); the ones that bite
+Full detail in [`decisions/evidence.md`](./decisions/evidence.md); the ones that bite
 most often:
 
 - **A fake more capable than reality hides bugs.** The test harness dispatched

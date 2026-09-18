@@ -12,7 +12,7 @@ export interface ResolvedModelContext {
  * The spec-drift firewall. Everything that knows *where* the browser API lives
  * is confined to this file (PLAN NFR-6).
  *
- * Resolution order — see `docs/history/M0-FINDINGS.md` §4:
+ * Resolution order — see `docs/decisions/evidence.md` 1.5:
  *   1. `document.modelContext`   canonical, Chrome 150+
  *   2. `navigator.modelContext`  deprecated in Chrome 150, still present in 149
  *   3. none                      polyfill absent / non-Chromium / SSR
@@ -46,7 +46,7 @@ export function isWebMcpSupported(): boolean {
 /**
  * `RegisteredTool.inputSchema` is a JSON *string* in Chrome 149–153 and an
  * object from Chrome 154.0.8013 (webmcp#241). Consumers must branch on `typeof`
- * and guard the parse. See `docs/history/M0-FINDINGS.md` §3 / FR-3.5.
+ * and guard the parse. See `docs/decisions/evidence.md` 2.2.
  *
  * Only needed by `/devtools` and `/testing`; core never reads tools back.
  */
@@ -72,7 +72,7 @@ export function normalizeInputSchema(schema: unknown): Record<string, unknown> |
 
 /**
  * The spec defaults `title` to the empty string rather than omitting it, so `??`
- * does not fall through. See `docs/history/M0-FINDINGS.md` §3 / FR-3.6.
+ * does not fall through. See `docs/decisions/evidence.md` 2.3.
  */
 export function displayTitle(tool: {name: string; title?: string}): string {
   return tool.title || tool.name;

@@ -91,5 +91,6 @@ Each file has the same five parts, and nothing else:
 4. **What it cost** — the downside accepted, stated plainly.
 5. **Revisit when** — the concrete signal that would reopen it.
 
-Dates are absolute. Where a record cites a measurement, the evidence is in
-[`history/M0-FINDINGS.md`](../history/M0-FINDINGS.md) or [`STATUS.md`](../STATUS.md).
+Dates are absolute. Where a record cites a measurement or a source reading, the item
+is in [`evidence.md`](./evidence.md) — every fact, with what it was checked against
+and when.

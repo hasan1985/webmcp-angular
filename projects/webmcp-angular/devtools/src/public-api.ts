@@ -271,7 +271,7 @@ export function mountWebMcpDevtools(options: WebMcpDevtoolsOptions = {}): WebMcp
   // Listen on BOTH the document and the model context. The spec dispatches
   // `toolchange` on the document, but @mcp-b/webmcp-polyfill 5.1.0 dispatches it
   // only on the ModelContext — a document-only listener silently never updates on a
-  // polyfill-backed page. See docs/history/M0-FINDINGS.md §8.
+  // polyfill-backed page. See docs/decisions/evidence.md 3.3.
   const onToolChange = () => void refresh();
   document.addEventListener('toolchange', onToolChange);
   context()?.addEventListener?.('toolchange', onToolChange);

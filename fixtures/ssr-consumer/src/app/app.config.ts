@@ -4,7 +4,7 @@ import {webMcpTool} from 'webmcp-angular/strict';
 
 // Uses the /strict secondary entry point on purpose. It imports its types from the
 // primary entry BY PACKAGE NAME, which silently degrades to `any` under a symlinked
-// (`file:`) install — see docs/history/M0-FINDINGS.md §6.1. The `toFixed` below only
+// (`file:`) install — see docs/decisions/evidence.md 4.1. The `toFixed` below only
 // compiles if `count` really is inferred as a number, so this file fails the build
 // if that regression ever comes back.
 const echoCount = webMcpTool({

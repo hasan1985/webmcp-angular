@@ -25,7 +25,7 @@ export interface WebMcpClient {
  * MIRRORS: `@angular/core` v22 `WebMcpToolExecute` (internally `Execute`).
  *
  * Note the return type is `unknown`, not a structured `{content: [...]}` envelope —
- * Angular serializes whatever you return. See `docs/history/M0-FINDINGS.md` §1.1.
+ * Angular serializes whatever you return. See `docs/decisions/evidence.md` 1.1.
  */
 export type WebMcpToolExecute<InputSchema extends JsonSchemaForInference> = (
   args: InferArgsFromInputSchema<InputSchema>,
@@ -38,7 +38,7 @@ export type WebMcpToolExecute<InputSchema extends JsonSchemaForInference> = (
  * MIRRORS: `@angular/core` v22 `WebMcpToolDescriptor` (internally `ToolDescriptor`).
  *
  * Deliberately NOT `ToolDescriptor` from `@mcp-b/webmcp-types` — that one is generic
- * over the *args*, this is generic over the *schema*. See `docs/history/M0-FINDINGS.md` §2.2.
+ * over the *args*, this is generic over the *schema*. See `docs/decisions/evidence.md` 1.6.
  *
  * There is no `title` and no `annotations` here: Angular exposes neither, so neither
  * does this package.
