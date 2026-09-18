@@ -6,7 +6,8 @@ For *what the package is*, read the [README](../README.md). For *how to use it*,
 [guide](./guide/README.md). For *how WebMCP works*, the
 [architecture course](./architecture/README.md). For *how the polyfill works*, read
 from source, [`docs/polyfill/`](./polyfill/README.md). For *why each choice was made*,
-[`docs/decisions/`](./decisions/README.md). This file is only the state of play.
+[`docs/decisions/`](./decisions/README.md). For *what might come next*,
+[`docs/ideas/`](./ideas/README.md). This file is only the state of play.
 
 ---
 

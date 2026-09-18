@@ -47,6 +47,7 @@ including the polyfill step you can't skip.
 | **[How WebMCP works](./docs/architecture/README.md)** | A short course on the browser API and the Angular integration — plus a [diagrammed visual guide](https://claude.ai/code/artifact/190f4737-c9ea-4892-aa2b-f9c854716f83) |
 | **[Why it is built this way](./docs/decisions/README.md)** | Twenty-one decision records: the situation, the options, what was chosen, what it cost, what would reopen it |
 | **[Inside the polyfill](./docs/polyfill/README.md)** | `@mcp-b/webmcp-polyfill` read from source, one chapter per file |
+| **[Ideas](./docs/ideas/README.md)** | What could come next — tools from an external MCP server, workflows — as design sketches with their costs |
 
 There's also a [runnable sample app](../webmcp-angular-playground) — tic-tac-toe an
 agent can play, page-scoped tools, a chat panel, and the inspector.
@@ -121,6 +122,7 @@ docs/architecture/           how it works
 docs/decisions/              why it is built this way — one record per decision
 docs/polyfill/               @mcp-b/webmcp-polyfill, read from source
 docs/STATUS.md               working state and open threads
+docs/ideas/                  what could come next, sketched with costs
 docs/history/                the original plan and research findings, kept as written
 ```
 

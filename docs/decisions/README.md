@@ -6,7 +6,8 @@ reopen it. Read these when you are about to change something and want to know
 whether the reason still holds.
 
 The [architecture course](../architecture/README.md) explains *how* it works; the
-[guide](../guide/README.md) explains *how to use it*; this folder is *why*.
+[guide](../guide/README.md) explains *how to use it*; this folder is *why*. Things
+not yet decided are sketched in [`ideas/`](../ideas/README.md).
 
 ## The one rule everything follows from
 
