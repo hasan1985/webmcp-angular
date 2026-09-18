@@ -141,7 +141,18 @@ do. Decide who gets told when it goes red. This is the main ongoing risk.
 
 ---
 
-### 7. Bridge is opt-in — verify the stop path with a real client
+### 7. Chat polish — done 18 September 2026
+
+Streaming (adaptive: tries `messages.stream()`, learns per session when an endpoint
+answers 400 — the proxy does), a growing bubble with a cursor, smart auto-scroll with
+a "↓ new messages" pill, a safe markdown renderer, a growing textarea (Enter sends,
+Shift+Enter newline), and a Stop button. Verified in Chrome against the proxy; the
+streaming render itself is covered by `agent.spec.ts` through the real SDK with a
+fake SSE `fetch`, since the proxy cannot stream. No chat library: nothing maintained
+exists for Angular, and Deep Chat (the one web-component option) owns the loop and
+weighs 387 kB.
+
+### 8. Bridge is opt-in — verify the stop path with a real client
 
 Built 16 September 2026: `ExternalAgents` service, header checkbox, lazy import,
 `start()`/`stop()`. Verified in Chrome: fresh load is off with no bridge chunk
